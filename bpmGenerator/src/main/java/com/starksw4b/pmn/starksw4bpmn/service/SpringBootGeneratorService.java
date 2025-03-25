@@ -1,118 +1,92 @@
 package com.starksw4b.pmn.starksw4bpmn.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpEntity;
-
 import java.io.*;
 import java.nio.file.*;
-import java.util.zip.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 
 @Service
 public class SpringBootGeneratorService {
 
-    private static final String INITIALIZR_URL = "https://start.spring.io/starter.zip"
-            + "?type=maven-project&language=java&bootVersion=3.3.0"
-            + "&dependencies=web,data-jpa,mysql";
+    // Ruta donde se encuentra el proyecto plantilla (carpeta a copiar)
+    private static final String TEMPLATE_DIR = "C:/devs/StarkSw4BPM/generatedProjects/ProjModelToFollow/";  // Ruta absoluta a la plantilla
 
-    // Ruta donde se generará el proyecto
-    private static final String PROJECT_DIR = "generated-project";
+    // Ruta donde se generarán los nuevos proyectos dentro de 'generatedProjects'
+    private static final String GENERATED_DIR = "C:/devs/StarkSw4BPM/generatedProjects/";
 
-    public Path generateAndExtractProject() throws IOException {
-        // Eliminar cualquier proyecto anterior en la carpeta
-        deleteExistingProject(PROJECT_DIR);
+    public Path generateProjectFromTemplate() throws IOException {
+        // Usar un nombre fijo para el directorio "generatedproject"
+        String newProjectDir = GENERATED_DIR + "BPM-Engine";
+        Path outputDir = Paths.get(newProjectDir);
 
-        RestTemplate restTemplate = new RestTemplate();
+        // Eliminar cualquier proyecto anterior llamado "generatedproject"
+        deleteExistingProject(outputDir);
 
-        HttpHeaders headers = new HttpHeaders();
-        HttpEntity<String> entity = new HttpEntity<>(headers);
-
-        // Hacer la solicitud GET a Initializr
-        ResponseEntity<ByteArrayResource> response = restTemplate.exchange(
-                INITIALIZR_URL, HttpMethod.GET, entity, ByteArrayResource.class);
-
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new IOException("Error al descargar el proyecto de Initializr");
+        // Asegurarse de que la ruta de destino exista
+        if (!Files.exists(outputDir)) {
+            Files.createDirectories(outputDir);  // Crear la carpeta si no existe
+            System.out.println("Directorio de salida creado: " + outputDir.toAbsolutePath());
         }
 
-        // Guardar el archivo ZIP en el servidor
-        Path zipFilePath = Path.of("generated-project.zip");
-        Files.write(zipFilePath, response.getBody().getByteArray(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        // Copiar la plantilla a la nueva ubicación
+        copyTemplateToNewProject(outputDir);
 
-        System.out.println("Proyecto generado exitosamente: " + zipFilePath.toAbsolutePath());
-
-        // Ruta de destino para descomprimir
-        Path outputDir = Path.of(PROJECT_DIR);
-
-        // Descomprimir el archivo ZIP en el directorio de destino
-        unzipAndDelete(zipFilePath.toString(), outputDir.toString());
-
-        // Verificar si el archivo extraído realmente existe antes de retornarlo
+        // Verificar si el directorio realmente existe antes de retornarlo
         if (!Files.exists(outputDir) || !Files.isDirectory(outputDir)) {
-            throw new IOException("El directorio extraído no existe o no es un directorio válido: " + outputDir);
+            throw new IOException("El directorio del proyecto generado no existe o no es un directorio válido.");
         }
 
         return outputDir;
     }
 
-    private void deleteExistingProject(String projectDir) throws IOException {
-        Path projectPath = Paths.get(projectDir);
-
-        // Si el directorio ya existe, eliminarlo recursivamente
-        if (Files.exists(projectPath)) {
+    // Método para eliminar cualquier proyecto anterior en la carpeta "generatedproject"
+    private void deleteExistingProject(Path projectDir) throws IOException {
+        if (Files.exists(projectDir)) {
             System.out.println("Eliminando el proyecto existente...");
-            Files.walk(projectPath)
+            Files.walk(projectDir)
                     .sorted(Comparator.reverseOrder())  // Orden inverso para eliminar archivos antes que carpetas
                     .map(Path::toFile)
                     .forEach(File::delete);
         }
     }
 
-    private void unzipAndDelete(String zipFilePath, String destDirectory) throws IOException {
-        File zipFile = new File(zipFilePath);
-        File destDir = new File(destDirectory);
+    // Método para copiar la plantilla de proyecto a la nueva ubicación
+    private void copyTemplateToNewProject(Path outputDir) throws IOException {
+        Path templateDir = Paths.get(TEMPLATE_DIR);  // Usamos la ruta absoluta para acceder a 'generatedProjects/platilla'
 
-        // Crear el directorio de destino si no existe
-        if (!destDir.exists()) {
-            destDir.mkdirs();
+        // Verificar si la plantilla existe
+        if (!Files.exists(templateDir) || !Files.isDirectory(templateDir)) {
+            throw new IOException("La plantilla no existe o no es un directorio válido.");
         }
 
-        // Descomprimir el archivo
-        try (ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                File newFile = new File(destDirectory, entry.getName());
-
-                // Crear directorios si es necesario
-                if (entry.isDirectory()) {
-                    newFile.mkdirs();
-                } else {
-                    // Asegurar que el directorio padre existe
-                    new File(newFile.getParent()).mkdirs();
-
-                    // Escribir el archivo descomprimido
-                    try (FileOutputStream fos = new FileOutputStream(newFile)) {
-                        byte[] buffer = new byte[1024];
-                        int len;
-                        while ((len = zipInputStream.read(buffer)) > 0) {
-                            fos.write(buffer, 0, len);
-                        }
-                    }
+        // Copiar la plantilla (directorio completo) a la nueva ubicación, excluyendo archivos no deseados
+        Files.walkFileTree(templateDir, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                // Excluir archivos y carpetas no deseados (por ejemplo, .idea y .gitignore)
+                if (file.toString().contains(".idea") || file.toString().contains(".gitignore")) {
+                    return FileVisitResult.SKIP_SUBTREE;  // Excluir todo el archivo (o directorio)
                 }
-                zipInputStream.closeEntry();
-            }
-        }
 
-        // Eliminar el archivo ZIP después de descomprimirlo
-        if (zipFile.delete()) {
-            System.out.println("Archivo ZIP eliminado: " + zipFilePath);
-        } else {
-            System.err.println("No se pudo eliminar el archivo ZIP.");
-        }
+                // Asegurarse de que los directorios de destino existan
+                Path destinationFile = outputDir.resolve(templateDir.relativize(file));
+                Files.createDirectories(destinationFile.getParent());  // Crea el directorio si no existe
+
+                Files.copy(file, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+
+            public FileVisitResult visitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                // Excluir directorios no deseados (por ejemplo, .idea)
+                if (dir.toString().contains(".idea")) {
+                    return FileVisitResult.SKIP_SUBTREE;  // Excluir todo el directorio y su contenido
+                }
+
+                Path destinationDir = outputDir.resolve(templateDir.relativize(dir));
+                Files.createDirectories(destinationDir);  // Crear el directorio de destino
+                return FileVisitResult.CONTINUE;
+            }
+        });
     }
 }

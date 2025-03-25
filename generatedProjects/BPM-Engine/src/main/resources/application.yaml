@@ -1,0 +1,9 @@
+camunda:
+  bpm:
+    admin-user:
+      id: demo
+      password: demo
+    deployment-resource-pattern: classpath*:/*.bpmn
+    job-execution:
+      enabled: false
+    auto-deployment-enabled: true
