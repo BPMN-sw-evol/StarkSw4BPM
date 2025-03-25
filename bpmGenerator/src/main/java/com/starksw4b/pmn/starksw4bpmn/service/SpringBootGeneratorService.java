@@ -10,14 +10,14 @@ import java.util.Comparator;
 public class SpringBootGeneratorService {
 
     // Ruta donde se encuentra el proyecto plantilla (carpeta a copiar)
-    private static final String TEMPLATE_DIR = "C:/devs/StarkSw4BPM/generatedProjects/ProjModelToFollow/";  // Ruta absoluta a la plantilla
+    private static final String TEMPLATE_DIR = Paths.get("..", "generatedProjects", "ProjModelToFollow").toString();  // Subir un nivel y acceder a la plantilla
 
     // Ruta donde se generarán los nuevos proyectos dentro de 'generatedProjects'
-    private static final String GENERATED_DIR = "C:/devs/StarkSw4BPM/generatedProjects/";
+    private static final String GENERATED_DIR = Paths.get("../generatedProjects").toString();  // Generar los proyectos dentro de 'generatedProjects'
 
     public Path generateProjectFromTemplate() throws IOException {
         // Usar un nombre fijo para el directorio "generatedproject"
-        String newProjectDir = GENERATED_DIR + "BPM-Engine";
+        String newProjectDir = GENERATED_DIR + "/BPM-Engine";
         Path outputDir = Paths.get(newProjectDir);
 
         // Eliminar cualquier proyecto anterior llamado "generatedproject"
