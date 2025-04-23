@@ -9,6 +9,7 @@
 # ========== Python / Streamlit ==========
 **/venv/
 **/.env/
+**/env/
 **/__pycache__/
 **/*.pyc
 **/*.db
