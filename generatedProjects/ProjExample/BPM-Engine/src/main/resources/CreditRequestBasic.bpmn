@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_14babg7" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.22.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.21.0">
+  <bpmn:collaboration id="Collaboration_1igq3ti">
+    <bpmn:participant id="Participant_0j191pn" name="Credit Preprocessing" processRef="Process_19oqlmt" />
+    <bpmn:textAnnotation id="TextAnnotation_1bgxs71">
+      <bpmn:text>Envío de un correo</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_1uxnvxk">
+      <bpmn:text>Algo hay que hacer en una DB</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:textAnnotation id="TextAnnotation_0dqv10r">
+      <bpmn:text>¿Externa? Campos posibles - DB associated</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0upyxm0" associationDirection="None" sourceRef="Activity_16xf8nu" targetRef="TextAnnotation_1uxnvxk" />
+    <bpmn:association id="Association_0gk26hw" associationDirection="None" sourceRef="Activity_0xob3dd" targetRef="TextAnnotation_0dqv10r" />
+    <bpmn:association id="Association_1extp3o" associationDirection="None" sourceRef="Activity_12x20v6" targetRef="TextAnnotation_1bgxs71" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_19oqlmt" isExecutable="true" camunda:historyTimeToLive="1">
+    <bpmn:laneSet id="LaneSet_0yc97om">
+      <bpmn:lane id="Lane_0r2bs8n" name="Credit analyst">
+        <bpmn:flowNodeRef>Activity_0xob3dd</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_16xf8nu</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_1e3th2z</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_12x20v6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_0axnifa</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:userTask id="Activity_0xob3dd" name="Fill in request form">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_0fr47m4</bpmn:incoming>
+      <bpmn:outgoing>Flow_00zl2so</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="Activity_16xf8nu" name="Register guarantee analysis request" camunda:class="com.example.CreditRequestHandler">
+      <bpmn:incoming>Flow_00zl2so</bpmn:incoming>
+      <bpmn:outgoing>Flow_0uqqb14</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_1e3th2z" name="credit preprocessed">
+      <bpmn:incoming>Flow_06kp06w</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sendTask id="Activity_12x20v6" name="Inform to applicant" camunda:class="com.example.SendNotification">
+      <bpmn:incoming>Flow_0uqqb14</bpmn:incoming>
+      <bpmn:outgoing>Flow_06kp06w</bpmn:outgoing>
+    </bpmn:sendTask>
+    <bpmn:sequenceFlow id="Flow_0fr47m4" sourceRef="Event_0axnifa" targetRef="Activity_0xob3dd" />
+    <bpmn:sequenceFlow id="Flow_00zl2so" sourceRef="Activity_0xob3dd" targetRef="Activity_16xf8nu" />
+    <bpmn:sequenceFlow id="Flow_0uqqb14" sourceRef="Activity_16xf8nu" targetRef="Activity_12x20v6" />
+    <bpmn:sequenceFlow id="Flow_06kp06w" sourceRef="Activity_12x20v6" targetRef="Event_1e3th2z" />
+    <bpmn:startEvent id="Event_0axnifa" name="credit request arrived">
+      <bpmn:outgoing>Flow_0fr47m4</bpmn:outgoing>
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_3te3gl7" name="Message_3te3gl7" />
+  <bpmn:message id="Message_0308cd0" name="Message_0308cd0" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1igq3ti">
+      <bpmndi:BPMNShape id="Participant_0j191pn_di" bpmnElement="Participant_0j191pn" isHorizontal="true">
+        <dc:Bounds x="140" y="140" width="710" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0r2bs8n_di" bpmnElement="Lane_0r2bs8n" isHorizontal="true">
+        <dc:Bounds x="170" y="140" width="680" height="170" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1kms7ic" bpmnElement="Activity_0xob3dd">
+        <dc:Bounds x="322" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1v8hu2m" bpmnElement="Activity_16xf8nu">
+        <dc:Bounds x="472" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_12g3riz" bpmnElement="Event_1e3th2z">
+        <dc:Bounds x="774" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="759" y="245" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1d7xbj1" bpmnElement="Activity_12x20v6">
+        <dc:Bounds x="632" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_02p6bu1_di" bpmnElement="Event_0axnifa">
+        <dc:Bounds x="212" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="198" y="245" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_0logxcr" bpmnElement="Flow_0fr47m4">
+        <di:waypoint x="248" y="220" />
+        <di:waypoint x="322" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_12gjgor" bpmnElement="Flow_00zl2so">
+        <di:waypoint x="422" y="220" />
+        <di:waypoint x="472" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1tu40q9" bpmnElement="Flow_0uqqb14">
+        <di:waypoint x="572" y="220" />
+        <di:waypoint x="632" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0f2xjod" bpmnElement="Flow_06kp06w">
+        <di:waypoint x="732" y="220" />
+        <di:waypoint x="774" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1bgxs71_di" bpmnElement="TextAnnotation_1bgxs71">
+        <dc:Bounds x="770" y="83" width="100" height="41" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1uxnvxk_di" bpmnElement="TextAnnotation_1uxnvxk">
+        <dc:Bounds x="570" y="82" width="140" height="44" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0dqv10r_di" bpmnElement="TextAnnotation_0dqv10r">
+        <dc:Bounds x="410" y="83" width="150" height="41" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0upyxm0_di" bpmnElement="Association_0upyxm0">
+        <di:waypoint x="554" y="180" />
+        <di:waypoint x="597" y="126" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0gk26hw_di" bpmnElement="Association_0gk26hw">
+        <di:waypoint x="401" y="180" />
+        <di:waypoint x="441" y="124" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1extp3o_di" bpmnElement="Association_1extp3o">
+        <di:waypoint x="726" y="181" />
+        <di:waypoint x="791" y="124" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
