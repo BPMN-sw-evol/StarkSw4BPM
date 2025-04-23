@@ -5,10 +5,14 @@ import com.starksw4b.pmn.starksw4bpmn.service.BpmnService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bpmn")
@@ -39,5 +43,17 @@ public class BpmnUploadController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error procesando el archivo BPMN.");
         }
     }
+
+    @GetMapping("/tasks")
+    public ResponseEntity<Map<String, List<String>>> getBpmnTasks() {
+        try {
+            Map<String, List<String>> tareas = bpmnService.getTareasPorTipo("uploads/proyecto.bpmn");
+            return ResponseEntity.ok(tareas);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 }
 

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Lista de Formularios</title>
+</head>
+<body>
+<h1>Lista de Formularios</h1>
+
+<table border="1">
+    <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Edad</th>
+        <th>Fecha de Nacimiento</th>
+        <th>Correo</th>
+        <th>Activo</th>
+        <th>Aprobado</th>
+        <th>Acción</th>
+    </tr>
+    <tr th:each="formulario : ${formularios}">
+        <td th:text="${formulario.id}"></td>
+        <td th:text="${formulario.nombre}"></td>
+        <td th:text="${formulario.edad}"></td>
+        <td th:text="${formulario.fechaNacimiento}"></td>
+        <td th:text="${formulario.correo}"></td>
+        <td th:text="${formulario.activo}"></td>
+        <td th:text="${formulario.aprobado}"></td>
+        <td>
+            <form th:if="${!formulario.aprobado}"
+                  th:action="@{'/formulario/aprobar/id/' + ${formulario.id}}"
+                  method="post">
+                <button type="submit">Aprobar</button>
+            </form>
+            <span th:if="${formulario.aprobado}">Ya aprobado</span>
+        </td>
+    </tr>
+</table>
+
+</body>
+</html>

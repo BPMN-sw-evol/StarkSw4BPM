@@ -24,3 +24,39 @@ hs_err_pid*
 replay_pid*
 
 target/
+
+# Ignorar entorno virtual dentro de UI
+UI/venv/
+UI/env/
+UI/.venv/
+UI/.env/
+
+# Archivos temporales y compilados de Python
+UI/__pycache__/
+UI/**/*.py[cod]
+UI/**/*.pyo
+
+# Archivos de configuración de Streamlit
+UI/.streamlit/config.toml
+UI/.streamlit/*.json
+
+# Archivos de logs o temporales
+UI/*.log
+UI/*.tmp
+
+# Checkpoints de Jupyter (por si usas notebooks)
+UI/.ipynb_checkpoints/
+
+# Configuración de editores
+UI/.vscode/
+UI/.idea/
+
+# Archivos de pruebas y cobertura
+UI/htmlcov/
+UI/.pytest_cache/
+UI/.tox/
+
+# Archivos de distribución
+UI/*.egg-info/
+UI/dist/
+UI/build/
