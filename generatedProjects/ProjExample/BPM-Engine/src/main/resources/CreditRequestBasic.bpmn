@@ -30,14 +30,14 @@
       <bpmn:incoming>Flow_0fr47m4</bpmn:incoming>
       <bpmn:outgoing>Flow_00zl2so</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:serviceTask id="Activity_16xf8nu" name="Register guarantee analysis request" camunda:class="com.example.CreditRequestHandler">
+    <bpmn:serviceTask id="Activity_16xf8nu" name="Register guarantee analysis request" camunda:class="com.example.workflow.CreditRequestHandler">
       <bpmn:incoming>Flow_00zl2so</bpmn:incoming>
       <bpmn:outgoing>Flow_0uqqb14</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:endEvent id="Event_1e3th2z" name="credit preprocessed">
       <bpmn:incoming>Flow_06kp06w</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sendTask id="Activity_12x20v6" name="Inform to applicant" camunda:class="com.example.SendNotification">
+    <bpmn:sendTask id="Activity_12x20v6" name="Inform to applicant" camunda:class="com.example.workflow.SendNotification">
       <bpmn:incoming>Flow_0uqqb14</bpmn:incoming>
       <bpmn:outgoing>Flow_06kp06w</bpmn:outgoing>
     </bpmn:sendTask>

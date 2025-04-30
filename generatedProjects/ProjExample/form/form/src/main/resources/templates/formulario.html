@@ -6,27 +6,34 @@
 <body>
 <h1>Formulario</h1>
 
-<form th:action="@{/formulario}" th:object="${formulario}" method="post">
+<form th:object="${formulario}"
+      th:action="@{/formulario}"
+      method="post">
     <label>Nombre:</label>
     <input type="text" th:field="*{nombre}" /><br/>
-
     <label>Edad:</label>
     <input type="number" th:field="*{edad}" /><br/>
-
     <label>Fecha de nacimiento:</label>
     <input type="date" th:field="*{fechaNacimiento}" /><br/>
-
     <label>Correo:</label>
     <input type="email" th:field="*{correo}" /><br/>
-
     <label>Activo:</label>
     <input type="checkbox" th:field="*{activo}" /><br/>
 
-    <button type="submit">Enviar</button>
+    <!-- Botón “Guardar” siempre -->
+    <button type="submit">Guardar</button>
+
+    <!-- Botón “Enviar” sólo cuando haya ID -->
+    <button type="submit"
+            th:if="${formulario.id != null}"
+            th:formaction="@{'/formulario/aprobar/id/' + ${formulario.id}}">
+        Enviar
+    </button>
 </form>
 
-<div th:if="${param.exito}">
-    <p style="color:green;">Formulario enviado con éxito.</p>
+<!-- Mensajes -->
+<div th:if="${exito}">
+    <p style="color:green;">Formulario guardado con éxito.</p>
 </div>
 </body>
 </html>

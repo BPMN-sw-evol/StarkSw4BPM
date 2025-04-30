@@ -55,14 +55,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>org.camunda.bpm.springboot</groupId>
-			<artifactId>camunda-bpm-spring-boot-starter</artifactId>
-			<version>7.20.0</version> <!-- Usa la versión que estés utilizando en tu proyecto -->
-		</dependency>
-
-
 	</dependencies>
 
 	<build>

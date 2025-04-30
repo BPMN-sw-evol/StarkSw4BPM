@@ -18,31 +18,43 @@ public class FormularioController {
         this.formularioService = formularioService;
     }
 
+    // Lector de GET: si viene id, recargamos ese DTO; si no, uno nuevo
     @GetMapping
-    public String mostrarFormulario(Model model) {
-        model.addAttribute("formulario", new FormularioDTO());
+    public String mostrarFormulario(
+            @RequestParam(value="id", required=false) Long id,
+            @RequestParam(value="exito", required=false) Boolean exito,
+            Model model) {
+        if (id != null) {
+            FormularioDTO dto = formularioService.obtenerPorId(id);
+            model.addAttribute("formulario", dto);
+        } else {
+            model.addAttribute("formulario", new FormularioDTO());
+        }
+        if (Boolean.TRUE.equals(exito)) {
+            model.addAttribute("exito", true);
+        }
         return "formulario";
     }
 
+    // POST guarda y redirige con id + exito=true
     @PostMapping
     public String enviarFormulario(@ModelAttribute("formulario") FormularioDTO formularioDTO) {
-        formularioService.guardarFormularioYIniciarProceso(formularioDTO);
-        return "redirect:/formulario?exito";
+        FormularioDTO guardado = formularioService.guardarFormularioYIniciarProceso(formularioDTO);
+        return "redirect:/formulario?id="
+                + guardado.getId()
+                + "&exito=true";
     }
 
-    @GetMapping("/lista")
-    public String listarFormularios(Model model) {
-        List<FormularioDTO> formularios = formularioService.obtenerTodos();
-        model.addAttribute("formularios", formularios);
-        return "lista";
-    }
-
+    // POST aprobar sigue igual
     @PostMapping("/aprobar/id/{id}")
     public String aprobarPorId(@PathVariable Long id) {
         formularioService.aprobarPorId(id);
         return "redirect:/formulario/lista";
     }
 
-
-
+    @GetMapping("/lista")
+    public String listarFormularios(Model model) {
+        model.addAttribute("formularios", formularioService.obtenerTodos());
+        return "lista";
+    }
 }

@@ -1,11 +1,13 @@
 package com.form.client.services;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.form.client.dto.FormularioDTO;
 import com.form.client.model.Formulario;
 import com.form.client.repository.FormularioRepository;
-import org.camunda.bpm.engine.TaskService;
-import org.camunda.bpm.engine.task.Task;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.List;
@@ -16,80 +18,96 @@ import java.util.stream.Collectors;
 public class FormularioService {
 
     private final FormularioRepository formularioRepository;
-    private final CamundaService camundaService;
-    private final TaskService taskService;
+    private final RestTemplate restTemplate;
+    private final String camundaRestUrl;
+    private final String processDefinitionKey = "Process_19oqlmt"; // ajusta al ID de tu proceso
 
     public FormularioService(FormularioRepository formularioRepository,
-                             CamundaService camundaService,
-                             TaskService taskService) {
+                             RestTemplate restTemplate,
+                             @Value("${camunda.rest.url}") String camundaRestUrl) {
         this.formularioRepository = formularioRepository;
-        this.camundaService = camundaService;
-        this.taskService = taskService;
+        this.restTemplate = restTemplate;
+        this.camundaRestUrl = camundaRestUrl;
     }
 
-    public void guardarFormularioYIniciarProceso(FormularioDTO dto) {
+    public FormularioDTO guardarFormularioYIniciarProceso(FormularioDTO dto) {
         // 1. Guardar en BD
-        Formulario formulario = new Formulario();
-        formulario.setNombre(dto.getNombre());
-        formulario.setEdad(dto.getEdad());
-        formulario.setFechaNacimiento(dto.getFechaNacimiento());
-        formulario.setCorreo(dto.getCorreo());
-        formulario.setActivo(dto.getActivo());
+        Formulario entidad = new Formulario();
+        entidad.setNombre(dto.getNombre());
+        entidad.setEdad(dto.getEdad());
+        entidad.setFechaNacimiento(dto.getFechaNacimiento());
+        entidad.setCorreo(dto.getCorreo());
+        entidad.setActivo(dto.getActivo());
+        formularioRepository.save(entidad);
 
-        formularioRepository.save(formulario);
+        // 2. Iniciar proceso en Camunda
+        Map<String,Object> variables = Map.of(
+                "formularioId", Map.of("value", entidad.getId(), "type", "Long"),
+                "nombre",       Map.of("value", dto.getNombre(),   "type", "String"),
+                "edad",         Map.of("value", dto.getEdad(),     "type", "Integer"),
+                "correo",       Map.of("value", dto.getCorreo(),   "type", "String"),
+                "activo",       Map.of("value", dto.getActivo(),   "type", "Boolean")
+        );
+        restTemplate.postForEntity(
+                camundaRestUrl + "/process-definition/key/" + processDefinitionKey + "/start",
+                Map.of("variables", variables),
+                JsonNode.class
+        );
 
-        // 2. Variables para el proceso (¡AGREGA el ID del formulario aquí!)
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("formularioId", Map.of("value", formulario.getId(), "type", "Long")); // 🔥 ESTE es el nuevo
-        variables.put("nombre", Map.of("value", dto.getNombre(), "type", "String"));
-        variables.put("edad", Map.of("value", dto.getEdad(), "type", "Integer"));
-        variables.put("correo", Map.of("value", dto.getCorreo(), "type", "String"));
-        variables.put("activo", Map.of("value", dto.getActivo(), "type", "Boolean"));
-
-        camundaService.iniciarProcesoFormulario(variables);
+        // 3. Rellenamos el ID en el DTO y lo devolvemos
+        dto.setId(entidad.getId());
+        return dto;
     }
-
 
     public List<FormularioDTO> obtenerTodos() {
-        return formularioRepository.findAll().stream()
+        return formularioRepository.findAll()
+                .stream()
                 .map(this::convertirAFormularioDTO)
                 .collect(Collectors.toList());
     }
 
-    private FormularioDTO convertirAFormularioDTO(Formulario formulario) {
+    private FormularioDTO convertirAFormularioDTO(Formulario f) {
         FormularioDTO dto = new FormularioDTO();
-        dto.setId(formulario.getId());
-        dto.setNombre(formulario.getNombre());
-        dto.setEdad(formulario.getEdad());
-        dto.setFechaNacimiento(formulario.getFechaNacimiento());
-        dto.setCorreo(formulario.getCorreo());
-        dto.setActivo(formulario.getActivo());
-        dto.setAprobado(formulario.getAprobado());
+        dto.setId(f.getId());
+        dto.setNombre(f.getNombre());
+        dto.setEdad(f.getEdad());
+        dto.setFechaNacimiento(f.getFechaNacimiento());
+        dto.setCorreo(f.getCorreo());
+        dto.setActivo(f.getActivo());
+        dto.setAprobado(f.getAprobado());
         return dto;
     }
+
     public void aprobarPorId(Long id) {
-        // 1. Aprueba el formulario en la base de datos
+        // 1. Actualizar DB
         Formulario formulario = formularioRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Formulario no encontrado con ID: " + id));
+                .orElseThrow(() -> new RuntimeException("No encontrado ID: " + id));
         formulario.setAprobado(true);
         formularioRepository.save(formulario);
 
-        // 2. Buscar tarea activa asociada a ese formulario (por variable de proceso)
-        Task tarea = taskService.createTaskQuery()
-                .processVariableValueEquals("formularioId", id)
-                .active()
-                .singleResult(); // ✅ solo una tarea por formulario
-
-        // Log para verificar si se encontró una tarea
-        if (tarea != null) {
-            System.out.println("Completing task with ID: " + tarea.getId());
-            taskService.complete(tarea.getId());
+        // 2. Buscar tarea activa vía REST
+        String queryUrl = camundaRestUrl + "/task"
+                + "?variables=formularioId_eq_" + id
+                + "&active=true";
+        ResponseEntity<JsonNode> resp = restTemplate.getForEntity(queryUrl, JsonNode.class);
+        JsonNode tasks = resp.getBody();
+        if (tasks != null && tasks.isArray() && tasks.size() > 0) {
+            String taskId = tasks.get(0).get("id").asText();
+            // 3. Completar tarea
+            restTemplate.postForEntity(
+                    camundaRestUrl + "/task/" + taskId + "/complete",
+                    Map.of(), Void.class
+            );
         } else {
-            System.out.println("No active task found for form ID: " + id);
-            throw new RuntimeException("No se encontró tarea activa para el formulario con ID: " + id);
+            throw new RuntimeException(
+                    "No se encontró tarea activa para el formulario con ID: " + id
+            );
         }
     }
 
+    public FormularioDTO obtenerPorId(Long id) {
+        Formulario entidad = formularioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Formulario no encontrado con ID: " + id));
+        return convertirAFormularioDTO(entidad);
+    }
 }
-
-
