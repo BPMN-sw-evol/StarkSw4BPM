@@ -26,7 +26,7 @@
     <!-- Botón “Enviar” sólo cuando haya ID -->
     <button type="submit"
             th:if="${formulario.id != null}"
-            th:formaction="@{'/formulario/aprobar/id/' + ${formulario.id}}">
+            th:formaction="@{'/formulario/enviar/id/' + ${formulario.id}}">
         Enviar
     </button>
 </form>

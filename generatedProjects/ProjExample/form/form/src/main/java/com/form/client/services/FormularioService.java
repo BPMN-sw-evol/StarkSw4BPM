@@ -78,6 +78,30 @@ public class FormularioService {
         return dto;
     }
 
+    public void enviarPorId(Long id) {
+        // 1. Buscar tarea activa vía REST (sin modificar la DB)
+        String queryUrl = camundaRestUrl + "/task"
+                + "?variables=formularioId_eq_" + id
+                + "&active=true";
+
+        ResponseEntity<JsonNode> resp = restTemplate.getForEntity(queryUrl, JsonNode.class);
+        JsonNode tasks = resp.getBody();
+
+        // 2. Si existe, completar la tarea; si no, error
+        if (tasks != null && tasks.isArray() && tasks.size() > 0) {
+            String taskId = tasks.get(0).get("id").asText();
+            restTemplate.postForEntity(
+                    camundaRestUrl + "/task/" + taskId + "/complete",
+                    Map.of(), Void.class
+            );
+        } else {
+            throw new RuntimeException(
+                    "No se encontró tarea activa para el formulario con ID: " + id
+            );
+        }
+    }
+
+
     public void aprobarPorId(Long id) {
         // 1. Actualizar DB
         Formulario formulario = formularioRepository.findById(id)

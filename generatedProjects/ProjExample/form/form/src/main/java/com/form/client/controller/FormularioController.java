@@ -6,8 +6,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
 
-import java.util.List;
-
 @Controller
 @RequestMapping("/formulario")
 public class FormularioController {
@@ -38,11 +36,18 @@ public class FormularioController {
 
     // POST guarda y redirige con id + exito=true
     @PostMapping
-    public String enviarFormulario(@ModelAttribute("formulario") FormularioDTO formularioDTO) {
+    public String guardarFormulario(@ModelAttribute("formulario") FormularioDTO formularioDTO) {
         FormularioDTO guardado = formularioService.guardarFormularioYIniciarProceso(formularioDTO);
         return "redirect:/formulario?id="
                 + guardado.getId()
                 + "&exito=true";
+    }
+
+    @PostMapping("/enviar/id/{id}")
+    public String enviarPorId(@PathVariable Long id) {
+        formularioService.enviarPorId(id);
+        // redirige a la vista de detalle del formulario con un parámetro indicando éxito
+        return "redirect:/formulario/lista";
     }
 
     // POST aprobar sigue igual
