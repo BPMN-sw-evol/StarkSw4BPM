@@ -1,13 +1,13 @@
-package com.form.client;
+package com.example.multi_db_demo;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class FormApplication {
+public class MultiDbDemoApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(FormApplication.class, args);
+		SpringApplication.run(MultiDbDemoApplication.class, args);
 	}
 
 }

@@ -4,11 +4,29 @@ import java.time.LocalDate;
 
 public class FormularioDTO {
 
+    private Long id;
     private String nombre;
     private Integer edad;
     private LocalDate fechaNacimiento;
     private String correo;
     private Boolean activo;
+    private Boolean aprobado = false;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Boolean getAprobado() {
+        return aprobado;
+    }
+
+    public void setAprobado(Boolean aprobado) {
+        this.aprobado = aprobado;
+    }
 
     public String getNombre() {
         return nombre;

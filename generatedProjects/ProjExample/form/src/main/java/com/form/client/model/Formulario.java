@@ -10,12 +10,20 @@ public class Formulario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nombre;
     private Integer edad;
     private LocalDate fechaNacimiento;
     private String correo;
     private Boolean activo;
+    private Boolean aprobado = false;
+
+    public Boolean getAprobado() {
+        return aprobado;
+    }
+
+    public void setAprobado(Boolean aprobado) {
+        this.aprobado = aprobado;
+    }
 
     public Long getId() {
         return id;

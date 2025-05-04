@@ -1,10 +1,10 @@
-package com.form.client;
+package com.example.multi_db_demo;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class FormApplicationTests {
+class MultiDbDemoApplicationTests {
 
 	@Test
 	void contextLoads() {
