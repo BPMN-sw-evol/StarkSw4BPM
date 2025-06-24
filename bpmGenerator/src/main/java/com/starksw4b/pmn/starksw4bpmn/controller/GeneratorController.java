@@ -1,6 +1,6 @@
 package com.starksw4b.pmn.starksw4bpmn.controller;
 
-import com.starksw4b.pmn.starksw4bpmn.service.SpringBootGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.service.BpmEngineGeneratorService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,17 +11,17 @@ import java.nio.file.Path;
 
 @RestController
 @RequestMapping("/generate")
-public class SpringBootGeneratorController {
+public class GeneratorController {
 
-    private final SpringBootGeneratorService generatorService;
+    private final BpmEngineGeneratorService generatorService;
 
     // Inyectando el servicio en el constructor
-    public SpringBootGeneratorController(SpringBootGeneratorService generatorService) {
+    public GeneratorController(BpmEngineGeneratorService generatorService) {
         this.generatorService = generatorService;
     }
 
     // Endpoint para generar el proyecto Spring Boot desde la plantilla
-    @GetMapping("/springboot")
+    @GetMapping("/bpm-engine")
     public ResponseEntity<String> generateSpringBootProject() {
         try {
             // Llamar al servicio para generar el proyecto a partir de la plantilla

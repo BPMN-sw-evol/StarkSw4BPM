@@ -7,7 +7,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 
 @Service
-public class SpringBootGeneratorService {
+public class BpmEngineGeneratorService {
 
     // Ruta donde se encuentra el proyecto plantilla (carpeta a copiar)
     private static final String TEMPLATE_DIR = Paths.get("..", "generatedProjects", "ProjModelToFollow").toString();  // Subir un nivel y acceder a la plantilla
