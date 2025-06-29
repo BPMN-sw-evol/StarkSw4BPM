@@ -1,6 +1,5 @@
 import streamlit as st
 import requests
-import json
 
 st.set_page_config(page_title="Cargar BPMN", page_icon="⚙️")
 
@@ -66,7 +65,7 @@ if st.session_state.tareas:
     for tarea in tareas.get("serviceTask", []):
         opcion = st.selectbox(
             f"Tipo de operación para: {tarea}",
-            ["JavaClass", "DelegateExprecion"],
+            ["CRUD", "Solo consulta", "Actualizar"],
             key=f"service_{tarea}"
         )
         service_config[tarea] = opcion
@@ -75,12 +74,10 @@ if st.session_state.tareas:
     st.markdown("### 📤 Send Tasks")
     send_config = {}
     for tarea in tareas.get("sendTask", []):
-        opcion = st.selectbox(
-            f"Tipo de operación para: {tarea}",
-            ["JavaClass", "DelegateExprecion"],
-            key=f"service_{tarea}"
-        )
-        service_config[tarea] = opcion
+        st.markdown(f"**{tarea}**")
+        destino = st.text_input("¿A quién va dirigido?", key=f"send_to_{tarea}")
+        contenido = st.text_input("¿Qué información se envía?", key=f"send_what_{tarea}")
+        send_config[tarea] = {"destinatario": destino, "contenido": contenido}
 
     if st.button("Guardar configuración de tareas"):
         configuracion_final = {
@@ -89,20 +86,5 @@ if st.session_state.tareas:
             "sendTasks": send_config
         }
         st.success("✅ Configuración guardada correctamente.")
-
-        try:
-            response = requests.post(
-                "http://localhost:8080/api/tasks/import",
-                headers={"Content-Type": "application/json"},
-                data=json.dumps(configuracion_final)
-            )
-
-            if response.status_code == 200:
-                st.success("✅ Configuración enviada y guardada correctamente.")
-            else:
-                st.error(f"❌ Error al enviar: {response.status_code}")
-                st.text(response.text)
-
-        except requests.exceptions.RequestException as e:
-            st.error(f"❌ Error de conexión: {e}")
+        st.json(configuracion_final)  # Mostrar la configuración final
 
