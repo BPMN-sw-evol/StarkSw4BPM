@@ -48,4 +48,8 @@ public class TaskService {
         task.setTaskType(type);
         return task;
     }
+
+    public List<TaskModel> getServiceTasks() {
+        return repository.findByTaskType("serviceTasks");
+    }
 }

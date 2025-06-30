@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 
 @Service
 public class FileCopyService {
@@ -41,5 +42,27 @@ public class FileCopyService {
         file.transferTo(destinationFile);  // Guardar el archivo en la carpeta 'resources'
 
         System.out.println("Archivo BPMN guardado en: " + destinationFile.getAbsolutePath());
+    }
+
+    public void saveBpmnFileFromPath(Path bpmnPath, Path proyectoGenerado) throws IOException {
+        if (!Files.exists(bpmnPath)) {
+            throw new IOException("El archivo BPMN no existe: " + bpmnPath);
+        }
+
+        // Ruta dinámica del directorio 'resources' del nuevo proyecto generado
+        Path resourcesPath = proyectoGenerado.resolve("src/main/resources");
+
+        if (!Files.exists(resourcesPath)) {
+            Files.createDirectories(resourcesPath);
+        }
+
+        Path destino = resourcesPath.resolve("proyecto.bpmn");
+
+        if (Files.exists(destino)) {
+            Files.delete(destino);
+        }
+
+        Files.copy(bpmnPath, destino, StandardCopyOption.REPLACE_EXISTING);
+        System.out.println("✔ Archivo BPMN copiado a: " + destino.toAbsolutePath());
     }
 }

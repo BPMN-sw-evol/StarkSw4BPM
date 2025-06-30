@@ -79,12 +79,48 @@ if st.session_state.tareas:
         contenido = st.text_input("¿Qué información se envía?", key=f"send_what_{tarea}")
         send_config[tarea] = {"destinatario": destino, "contenido": contenido}
 
+    # Paso 1: Definir flag de sesión para saber si ya se guardó
+    if "config_guardada" not in st.session_state:
+        st.session_state.config_guardada = False
+    if "ultima_config" not in st.session_state:
+        st.session_state.ultima_config = {}
+
+    # Paso 2: Guardar la configuración al presionar el botón
     if st.button("Guardar configuración de tareas"):
         configuracion_final = {
             "userTasks": user_config,
             "serviceTasks": service_config,
             "sendTasks": send_config
         }
-        st.success("✅ Configuración guardada correctamente.")
-        st.json(configuracion_final)  # Mostrar la configuración final
+
+        try:
+            response = requests.post("http://localhost:8080/api/tasks/import", json=configuracion_final)
+
+            if response.status_code == 200:
+                st.session_state.config_guardada = True
+                st.session_state.ultima_config = configuracion_final
+                st.success("✅ Configuración guardada en base de datos correctamente.")
+            else:
+                st.error(f"❌ Error guardando configuración: {response.status_code} - {response.text}")
+        except requests.exceptions.ConnectionError:
+            st.error("❌ No se pudo conectar al backend.")
+
+    # Paso 3: Si ya se guardó, mostrar el JSON y el botón de generar
+    if st.session_state.config_guardada:
+        st.subheader("📝 Última configuración guardada")
+        st.json(st.session_state.ultima_config)
+
+        if st.button("🚀 Generar proyecto desde configuración"):
+            try:
+                gen_response = requests.post("http://localhost:8080/api/generator/generate-from-config")
+                if gen_response.status_code == 200:
+                    st.success("✅ Proyecto generado exitosamente.")
+                    st.write(gen_response.text)
+
+                    download_url = "http://localhost:8080/api/generator/download-zip"
+                    st.markdown(f"📦 [Haz clic aquí para descargar el proyecto .zip]({download_url})")
+                else:
+                    st.error(f"❌ Error generando proyecto: {gen_response.status_code} - {gen_response.text}")
+            except requests.exceptions.ConnectionError:
+                st.error("❌ No se pudo conectar al backend para generar el proyecto.")
 

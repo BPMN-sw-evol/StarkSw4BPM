@@ -7,13 +7,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Comparator;
 
 @Service
-public class BpmEngineGeneratorService {
+public class BpmnEngineGeneratorService {
 
     // Ruta donde se encuentra el proyecto plantilla (carpeta a copiar)
     private static final String TEMPLATE_DIR = Paths.get("..", "generatedProjects", "ProjModelToFollow").toString();  // Subir un nivel y acceder a la plantilla
 
     // Ruta donde se generarán los nuevos proyectos dentro de 'generatedProjects'
-    private static final String GENERATED_DIR = Paths.get("../generatedProjects").toString();  // Generar los proyectos dentro de 'generatedProjects'
+    private static final String GENERATED_DIR = Paths.get("../generatedProjects/generatedProject").toString();  // Generar los proyectos dentro de 'generatedProjects'
 
     public Path generateProjectFromTemplate() throws IOException {
         // Usar un nombre fijo para el directorio "generatedproject"

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_13z5spw" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.27.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.21.0">
+  <bpmn:process id="Process_1fi3hmt" isExecutable="true" camunda:historyTimeToLive="0">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="dato1" label="dato de prueba 1" type="long" defaultValue="10000" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:outgoing>Flow_0102ebu</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0102ebu" sourceRef="StartEvent_1" targetRef="Activity_1fmv9uw" />
+    <bpmn:endEvent id="Event_0si8kp7">
+      <bpmn:incoming>Flow_1h1i2gl</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_15twqc7" sourceRef="Activity_1fmv9uw" targetRef="Activity_02zywwg" />
+    <bpmn:serviceTask id="Activity_1fmv9uw" name="Send Msg x Terminal" camunda:class="rutaDeLaClase">
+      <bpmn:documentation>Esta tarea multiplica el valor en dato1 x 3 y lo retorna en dato2. 
+Adicionalmente lo muestra por la terminal. 
+Estas dos actividades las hace desde una Java Delegate Class en el SpringBoot donde está embebida la máquina de Camunda.
+La clase debe llamarse 
+
+"SndMsgxTrm" 
+"SendMsgxTerminal"
+"Send_Msg_x_Terminal"</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="datoIn1">${dato1}</camunda:inputParameter>
+          <camunda:outputParameter name="dato2" />
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0102ebu</bpmn:incoming>
+      <bpmn:outgoing>Flow_15twqc7</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1h1i2gl" sourceRef="Activity_02zywwg" targetRef="Event_0si8kp7" />
+    <bpmn:userTask id="Activity_02zywwg" name="Ver Resultados">
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="dato1" label="Este fue el que dato que se digitó al inicio" type="long" />
+          <camunda:formField id="dato2" label="Este es el resultado de la operación en Send_Msg_x_Terminal" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_15twqc7</bpmn:incoming>
+      <bpmn:outgoing>Flow_1h1i2gl</bpmn:outgoing>
+    </bpmn:userTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1fi3hmt">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1vp26pk_di" bpmnElement="Activity_1fmv9uw">
+        <dc:Bounds x="290" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0si8kp7_di" bpmnElement="Event_0si8kp7">
+        <dc:Bounds x="592" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0s2lfqx_di" bpmnElement="Activity_02zywwg">
+        <dc:Bounds x="440" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0102ebu_di" bpmnElement="Flow_0102ebu">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="290" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15twqc7_di" bpmnElement="Flow_15twqc7">
+        <di:waypoint x="390" y="117" />
+        <di:waypoint x="440" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1h1i2gl_di" bpmnElement="Flow_1h1i2gl">
+        <di:waypoint x="540" y="117" />
+        <di:waypoint x="592" y="117" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
