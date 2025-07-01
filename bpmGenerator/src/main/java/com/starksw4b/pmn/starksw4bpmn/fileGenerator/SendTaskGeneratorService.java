@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 @Service
 public class SendTaskGeneratorService {
 
-    private static final String BASE_PATH = "../generatedProjects/generatedProject/BPM-Engine/src/main/java/com/example/workflow";
+    private static final String BASE_PATH = "../generatedProjects/generatedproject/BPM-Engine/src/main/java/com/example/workflow";
 
     public void generateSendTaskClass(String className) throws IOException {
         String content = generateClassContent(className);

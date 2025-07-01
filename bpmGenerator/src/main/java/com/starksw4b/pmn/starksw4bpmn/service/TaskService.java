@@ -23,18 +23,24 @@ public class TaskService {
         if (dto.getUserTasks() != null) {
             dto.getUserTasks().forEach((name, category) -> {
                 tasks.add(createTask(name, category, "userTasks"));
+                System.out.println("Tarea de usuario guardada: " + name + " - " + category);
+
             });
         }
 
         if (dto.getServiceTasks() != null) {
             dto.getServiceTasks().forEach((name, category) -> {
                 tasks.add(createTask(name, category, "serviceTasks"));
+                System.out.println("Tarea de servicio guardada: " + name + " - " + category);
+
             });
         }
 
         if (dto.getSendTasks() != null) {
             dto.getSendTasks().forEach((name, category) -> {
                 tasks.add(createTask(name, category, "sendTasks"));
+                System.out.println("Tarea de envío guardada: " + name + " - " + category);
+
             });
         }
 

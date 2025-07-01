@@ -79,6 +79,8 @@ public class SystemGeneratorFacade {
 
         // Paso 3: generar clases según configuración
         List<TaskModel> serviceTasks = taskService.getServiceTasks();
+        System.out.println("Tareas de servicio recuperadas: " + serviceTasks);
+
         for (TaskModel task : serviceTasks) {
             String className = task.getName().replaceAll("\\s+", "");
             switch (task.getTaskCategory()) {
