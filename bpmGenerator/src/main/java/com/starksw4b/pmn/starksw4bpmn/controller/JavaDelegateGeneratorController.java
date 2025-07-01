@@ -75,7 +75,7 @@ public class JavaDelegateGeneratorController {
     public ResponseEntity<Resource> downloadGeneratedProjectZip() {
         try {
             // Ruta del proyecto generado (ajústala según tu estructura)
-            Path projectPath = Paths.get("../generatedProjects/BPM-Engine");
+            Path projectPath = Paths.get("../generatedProjects/generatedProject/BPM-Engine");
             Path zipPath = Files.createTempFile("project-", ".zip");
 
             // Comprimir carpeta

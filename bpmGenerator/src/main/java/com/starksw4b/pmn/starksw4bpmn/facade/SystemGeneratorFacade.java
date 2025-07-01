@@ -71,8 +71,8 @@ public class SystemGeneratorFacade {
         for (TaskModel task : serviceTasks) {
             String className = task.getName().replaceAll("\\s+", "");
             switch (task.getTaskCategory()) {
-                case "CRUD" -> javaDelegateGeneratorService.generateJavaDelegateClass(className);
-                case "Solo consulta" -> delegateExpressionGeneratorService.generateDelegateExpressionClass(className);
+                case "Java class" -> javaDelegateGeneratorService.generateJavaDelegateClass(className);
+                case "Delegate expression" -> delegateExpressionGeneratorService.generateDelegateExpressionClass(className);
             }
         }
 

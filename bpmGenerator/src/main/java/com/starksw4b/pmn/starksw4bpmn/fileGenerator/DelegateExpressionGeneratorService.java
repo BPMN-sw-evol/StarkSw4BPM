@@ -10,7 +10,7 @@ import java.nio.file.Paths;
 @Service
 public class DelegateExpressionGeneratorService {
 
-    private static final String BASE_PATH = "../generatedProjects/BPM-Engine/src/main/java/com/example/workflow";
+    private static final String BASE_PATH = "../generatedProjects/generatedProject/BPM-Engine/src/main/java/com/example/workflow";
 
     public void generateDelegateExpressionClass(String className) throws IOException {
         String content = generateClassContent(className);

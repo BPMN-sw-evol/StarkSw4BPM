@@ -53,8 +53,8 @@ if st.session_state.tareas:
     user_config = {}
     for tarea in tareas.get("userTask", []):
         opcion = st.selectbox(
-            f"Tipo de tarea para: {tarea}",
-            ["Formulario", "Lista", "Aprobación"],
+            f"Tipo de formulario para: {tarea}",
+            ["Camunda Forms", "Embedded or External Task Forms", "Generated Task Forms"],
             key=f"user_{tarea}"
         )
         user_config[tarea] = opcion
@@ -64,8 +64,8 @@ if st.session_state.tareas:
     service_config = {}
     for tarea in tareas.get("serviceTask", []):
         opcion = st.selectbox(
-            f"Tipo de operación para: {tarea}",
-            ["CRUD", "Solo consulta", "Actualizar"],
+            f"Implementación para: {tarea}",
+            ["External", "Java class", "Expression", "Delegate expression", "Connector"],
             key=f"service_{tarea}"
         )
         service_config[tarea] = opcion
@@ -74,10 +74,14 @@ if st.session_state.tareas:
     st.markdown("### 📤 Send Tasks")
     send_config = {}
     for tarea in tareas.get("sendTask", []):
-        st.markdown(f"**{tarea}**")
-        destino = st.text_input("¿A quién va dirigido?", key=f"send_to_{tarea}")
-        contenido = st.text_input("¿Qué información se envía?", key=f"send_what_{tarea}")
-        send_config[tarea] = {"destinatario": destino, "contenido": contenido}
+        opcion = st.selectbox(
+            f"Implementación para: {tarea}",
+            ["External", "Java class", "Expression", "Delegate expression", "Connector"],
+            key=f"send_{tarea}"
+        )
+        send_config[tarea] = opcion
+
+
 
     # Paso 1: Definir flag de sesión para saber si ya se guardó
     if "config_guardada" not in st.session_state:
