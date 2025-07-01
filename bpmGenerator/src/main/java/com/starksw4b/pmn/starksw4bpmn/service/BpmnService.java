@@ -25,25 +25,26 @@ public class BpmnService {
     // Ruta dentro del proyecto
     private static final String UPLOAD_DIR = "uploads/";
 
-    public void processBpmnFile(MultipartFile file) throws IOException {
+    public String processBpmnFile(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             throw new InvalidBpmnException("⚠ El archivo BPMN está vacío.");
         }
 
-        // Obtener la ruta absoluta del proyecto y agregar "uploads/"
-        String projectDir = System.getProperty("user.dir"); // Directorio raíz del proyecto
+        String projectDir = System.getProperty("user.dir");
         String uploadPath = projectDir + File.separator + UPLOAD_DIR;
-
-        // Crear la carpeta si no existe
         Files.createDirectories(Paths.get(uploadPath));
 
-        // Guardar el archivo en la carpeta "uploads/" dentro del proyecto
-        String filePath = uploadPath + File.separator + "proyecto.bpmn";  // Nombre fijo
+        String originalFileName = file.getOriginalFilename();
+        String filePath = uploadPath + File.separator + originalFileName;
+
         File destino = new File(filePath);
         file.transferTo(destino);
 
         System.out.println("Archivo BPMN guardado en: " + destino.getAbsolutePath());
+
+        return originalFileName; // devolver el nombre para usarlo después
     }
+
 
     public Map<String, List<String>> getTareasPorTipo(String pathArchivo) throws Exception {
         File archivo = new File(pathArchivo);

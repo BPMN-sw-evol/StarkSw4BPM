@@ -10,10 +10,12 @@ import com.starksw4b.pmn.starksw4bpmn.service.TaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.List;
 
 @Service
@@ -58,12 +60,21 @@ public class SystemGeneratorFacade {
         Path proyectoGenerado = generatorService.generateProjectFromTemplate();
 
         // Paso 2: copiar el archivo BPMN al proyecto generado
-        Path bpmnOriginal = Paths.get(System.getProperty("user.dir"), "uploads", "proyecto.bpmn");
-        if (Files.exists(bpmnOriginal)) {
+        // Usar el archivo más reciente en la carpeta uploads
+        File folder = new File(System.getProperty("user.dir") + File.separator + "uploads");
+        File[] archivos = folder.listFiles((dir, name) -> name.endsWith(".bpmn"));
+
+        if (archivos != null && archivos.length > 0) {
+            File archivoMasReciente = Arrays.stream(archivos)
+                    .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                    .orElseThrow();
+
+            Path bpmnOriginal = archivoMasReciente.toPath();
             fileCopyService.saveBpmnFileFromPath(bpmnOriginal, proyectoGenerado);
+
             System.out.println("✔ BPMN copiado dentro del proyecto generado.");
         } else {
-            System.out.println("⚠ No se encontró el archivo BPMN en uploads/proyecto.bpmn");
+            System.out.println("⚠ No se encontró ningún archivo BPMN en uploads/");
         }
 
         // Paso 3: generar clases según configuración

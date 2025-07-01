@@ -56,7 +56,7 @@ public class FileCopyService {
             Files.createDirectories(resourcesPath);
         }
 
-        Path destino = resourcesPath.resolve("proyecto.bpmn");
+        Path destino = resourcesPath.resolve(bpmnPath.getFileName());
 
         if (Files.exists(destino)) {
             Files.delete(destino);

@@ -19,6 +19,7 @@ import java.util.List;
 public class BpmnUploadController {
 
     private final BpmnService bpmnService;
+    private static String nombreArchivoBpmn = "proyecto.bpmn";
 
     public BpmnUploadController(BpmnService bpmnService) {
         this.bpmnService = bpmnService;
@@ -27,13 +28,9 @@ public class BpmnUploadController {
     @PostMapping("/upload")
     public ResponseEntity<String> uploadBpmnFile(@RequestParam("file") MultipartFile file) {
         try {
-            // Agregar logs para verificar el archivo
             System.out.println("Archivo recibido: " + file.getOriginalFilename());
-            System.out.println("Tamaño del archivo: " + file.getSize() + " bytes");
-            System.out.println("Tipo de contenido: " + file.getContentType());
 
-            // Procesar el archivo
-            bpmnService.processBpmnFile(file);
+            nombreArchivoBpmn = bpmnService.processBpmnFile(file); // guardar nombre original
 
             return ResponseEntity.ok("Archivo BPMN procesado correctamente.");
         } catch (InvalidBpmnException e) {
@@ -47,7 +44,8 @@ public class BpmnUploadController {
     @GetMapping("/tasks")
     public ResponseEntity<Map<String, List<String>>> getBpmnTasks() {
         try {
-            Map<String, List<String>> tareas = bpmnService.getTareasPorTipo("uploads/proyecto.bpmn");
+            String path = "uploads/" + nombreArchivoBpmn;
+            Map<String, List<String>> tareas = bpmnService.getTareasPorTipo(path);
             return ResponseEntity.ok(tareas);
         } catch (Exception e) {
             e.printStackTrace();
