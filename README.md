@@ -17,6 +17,7 @@ Make sure you have the following installed:
 - [Java JDK 17+](https://adoptium.net/)
 - [Maven](https://maven.apache.org/)
 - [Python 3.9+](https://www.python.org/)
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/) (recommended IDE for Java development)
 
 ## Installation
 
