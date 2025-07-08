@@ -1,6 +1,3 @@
-
----
-
 ````markdown
 # StarkSw4BPM
 
