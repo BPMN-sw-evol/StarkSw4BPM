@@ -1,4 +1,3 @@
-````markdown
 # StarkSw4BPM
 
 Generador de software basado en procesos de negocio (BPM). A partir de un modelo `.bpmn`, esta herramienta crea automáticamente un proyecto Spring Boot ejecutable con Camunda y una interfaz amigable en Streamlit para facilitar la configuración.
