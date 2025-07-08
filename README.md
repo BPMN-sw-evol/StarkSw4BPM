@@ -27,7 +27,8 @@ Asegúrate de tener instalados los siguientes programas:
 - [Git](https://git-scm.com/)
 - [Java JDK 17 o superior](https://adoptium.net/)
 - [Maven](https://maven.apache.org/)
-- [Python 3.9 o superior](https://www.python.org/)
+- [Python 3.9+](https://www.python.org/)
+- [IntelliJ IDEA](https://www.jetbrains.com/idea/) (recommended IDE for Java development)
 
 ---
 
