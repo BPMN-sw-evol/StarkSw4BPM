@@ -1,8 +1,10 @@
 package com.starksw4b.pmn.starksw4bpmn.facade;
 
-import com.starksw4b.pmn.starksw4bpmn.fileGenerator.DelegateExpressionGeneratorService;
-import com.starksw4b.pmn.starksw4bpmn.fileGenerator.JavaDelegateGeneratorService;
-import com.starksw4b.pmn.starksw4bpmn.fileGenerator.SendTaskGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.ExternalProjectGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.FormClassGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.fileGenerator.internal.DelegateExpressionGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.fileGenerator.internal.JavaDelegateGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.fileGenerator.internal.SendTaskGeneratorService;
 import com.starksw4b.pmn.starksw4bpmn.model.TaskModel;
 import com.starksw4b.pmn.starksw4bpmn.service.FileCopyService;
 import com.starksw4b.pmn.starksw4bpmn.service.BpmnEngineGeneratorService;
@@ -12,9 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -27,20 +27,28 @@ public class SystemGeneratorFacade {
     private final BpmnEngineGeneratorService generatorService;
     private final TaskService taskService;
     private final FileCopyService fileCopyService;
+    private final ExternalProjectGeneratorService externalProjectGeneratorService;
+    private final FormClassGeneratorService formClassGeneratorService;
 
     @Autowired
-    public SystemGeneratorFacade(JavaDelegateGeneratorService javaDelegateGeneratorService,
-                                 DelegateExpressionGeneratorService delegateExpressionGeneratorService,
-                                 SendTaskGeneratorService sendTaskGeneratorService,
-                                 BpmnEngineGeneratorService generatorService,
-                                 TaskService taskService,
-                                 FileCopyService fileCopyService) {
+    public SystemGeneratorFacade(
+            JavaDelegateGeneratorService javaDelegateGeneratorService,
+            DelegateExpressionGeneratorService delegateExpressionGeneratorService,
+            SendTaskGeneratorService sendTaskGeneratorService,
+            BpmnEngineGeneratorService generatorService,
+            TaskService taskService,
+            FileCopyService fileCopyService,
+            ExternalProjectGeneratorService externalProjectGeneratorService,
+            FormClassGeneratorService formClassGeneratorService
+    ) {
         this.javaDelegateGeneratorService = javaDelegateGeneratorService;
         this.delegateExpressionGeneratorService = delegateExpressionGeneratorService;
         this.sendTaskGeneratorService = sendTaskGeneratorService;
         this.generatorService = generatorService;
         this.taskService = taskService;
         this.fileCopyService = fileCopyService;
+        this.externalProjectGeneratorService = externalProjectGeneratorService;
+        this.formClassGeneratorService = formClassGeneratorService;
     }
 
     public void generarClaseJavaDelegate(String className) throws IOException {
@@ -66,7 +74,7 @@ public class SystemGeneratorFacade {
 
         if (archivos != null && archivos.length > 0) {
             File archivoMasReciente = Arrays.stream(archivos)
-                    .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                    .max( (f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
                     .orElseThrow();
 
             Path bpmnOriginal = archivoMasReciente.toPath();
@@ -90,5 +98,19 @@ public class SystemGeneratorFacade {
         }
 
         System.out.println("✔ Proyecto modificado sobre plantilla en: " + proyectoGenerado.toAbsolutePath());
+
+        // Paso 4: generar sistema externo para formularios
+        Path externalProjectPath = externalProjectGeneratorService.generateExternalFormProject(proyectoGenerado.getParent());
+
+        // Paso 4.1: generar formularios de usuario (uno por tarea)
+        List<TaskModel> userTasks = taskService.getUserTasks();
+        System.out.println("Tareas de usuario recuperadas: " + userTasks);
+
+        for (TaskModel task : userTasks) {
+            String className = task.getName().replaceAll("\\s+", "");
+            formClassGeneratorService.generateFormController(externalProjectPath, className);
+        }
+
+        System.out.println("✔ Sistema de formularios generado en: " + externalProjectPath.toAbsolutePath());
     }
 }

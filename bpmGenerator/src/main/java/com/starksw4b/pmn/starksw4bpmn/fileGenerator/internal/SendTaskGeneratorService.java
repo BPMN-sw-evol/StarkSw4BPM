@@ -1,4 +1,4 @@
-package com.starksw4b.pmn.starksw4bpmn.fileGenerator;
+package com.starksw4b.pmn.starksw4bpmn.fileGenerator.internal;
 
 import org.springframework.stereotype.Service;
 
@@ -8,21 +8,18 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Service
-public class JavaDelegateGeneratorService {
+public class SendTaskGeneratorService {
 
     private static final String BASE_PATH = "../generatedProjects/generatedproject/BPM-Engine/src/main/java/com/example/workflow";
 
-    public void generateJavaDelegateClass(String className) throws IOException {
+    public void generateSendTaskClass(String className) throws IOException {
         String content = generateClassContent(className);
         Path outputPath = Paths.get(BASE_PATH, className + ".java");
 
-        // Crear directorios si no existen
         Files.createDirectories(outputPath.getParent());
-
-        // Escribir archivo
         Files.writeString(outputPath, content);
 
-        System.out.println("Clase generada en: " + outputPath.toAbsolutePath());
+        System.out.println("Clase generada para SendTask en: " + outputPath.toAbsolutePath());
     }
 
     private String generateClassContent(String className) {
@@ -37,10 +34,10 @@ public class JavaDelegateGeneratorService {
                 "    private static final Logger LOGGER = LoggerFactory.getLogger(" + className + ".class);\n\n" +
                 "    @Override\n" +
                 "    public void execute(DelegateExecution execution) throws Exception {\n" +
-                "        LOGGER.info(\"Ejecutando: Register Guarantee Analysis Request\");\n\n" +
-                "        String solicitudId = (String) execution.getVariable(\"solicitudId\");\n" +
-                "        LOGGER.info(\"Registrando solicitud de análisis de garantía para ID: {}\", solicitudId);\n" +
-                "        execution.setVariable(\"garantiaRegistrada\", true);\n" +
+                "        LOGGER.info(\"SendTask ejecutado: simulando envío de mensaje o integración externa\");\n\n" +
+                "        String destinatario = (String) execution.getVariable(\"destinatario\");\n" +
+                "        LOGGER.info(\"Enviando mensaje a: {}\", destinatario);\n" +
+                "        execution.setVariable(\"mensajeEnviado\", true);\n" +
                 "    }\n" +
                 "}\n";
     }

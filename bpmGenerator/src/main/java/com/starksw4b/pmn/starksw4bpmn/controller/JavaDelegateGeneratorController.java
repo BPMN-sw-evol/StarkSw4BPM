@@ -74,38 +74,35 @@ public class JavaDelegateGeneratorController {
     @GetMapping("/download-zip")
     public ResponseEntity<Resource> downloadGeneratedProjectZip() {
         try {
-            // Ruta del proyecto generado (ajústala según tu estructura)
-            Path projectPath = Paths.get("../generatedProjects/generatedProject/BPM-Engine");
-            Path zipPath = Files.createTempFile("project-", ".zip");
+            Path rootDir = Paths.get("../generatedProjects/generatedProject");
+            Path tempZip = Files.createTempFile("projects-", ".zip");
 
-            // Comprimir carpeta
-            try (FileOutputStream fos = new FileOutputStream(zipPath.toFile());
+            try (FileOutputStream fos = new FileOutputStream(tempZip.toFile());
                  ZipOutputStream zos = new ZipOutputStream(fos)) {
 
-                Files.walk(projectPath)
+                Files.walk(rootDir)
                         .filter(path -> !Files.isDirectory(path))
                         .forEach(path -> {
                             try {
-                                ZipEntry zipEntry = new ZipEntry(projectPath.relativize(path).toString());
-                                zos.putNextEntry(zipEntry);
+                                Path relativePath = rootDir.getFileName().resolve(rootDir.relativize(path));
+                                zos.putNextEntry(new ZipEntry(relativePath.toString()));
                                 Files.copy(path, zos);
                                 zos.closeEntry();
                             } catch (IOException e) {
-                                throw new RuntimeException("Error al comprimir archivo: " + path, e);
+                                throw new RuntimeException("Error al comprimir: " + path, e);
                             }
                         });
             }
 
-            InputStreamResource resource = new InputStreamResource(new FileInputStream(zipPath.toFile()));
+            InputStreamResource resource = new InputStreamResource(new FileInputStream(tempZip.toFile()));
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=proyecto-generado.zip")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=generated-system.zip")
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(resource);
 
         } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }

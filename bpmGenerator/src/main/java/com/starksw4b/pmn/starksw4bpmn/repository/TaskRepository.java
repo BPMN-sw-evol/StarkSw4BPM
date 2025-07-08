@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface TaskRepository extends JpaRepository<TaskModel, Long> {
     List<TaskModel> findByTaskType(String taskType);
+    List<TaskModel> findByTaskCategoryIn(List<String> categories);
+
 }

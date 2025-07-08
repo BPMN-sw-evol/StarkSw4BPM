@@ -58,4 +58,12 @@ public class TaskService {
     public List<TaskModel> getServiceTasks() {
         return repository.findByTaskType("serviceTasks");
     }
+
+    public List<TaskModel> getUserTasks() {
+        return repository.findByTaskCategoryIn(
+                List.of("Formulario", "Camunda Forms", "Embedded or External Task Forms", "Generated Task Forms")
+        );
+    }
+
+
 }
