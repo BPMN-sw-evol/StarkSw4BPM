@@ -73,7 +73,7 @@ mvn spring-boot:run
 🔗 Esto inicia el servidor en: [http://localhost:8080](http://localhost:8080)
 
 > ⚠️ **Importante:** Esta aplicación backend funciona únicamente como **API REST**.
-> Para poder usarla e interactuar con ella (por ejemplo, cargar modelos BPMN o generar código), **es recomendado continuar con los pasos para ejecutar la interfaz de usuario (UI)**.
+> Para poder usarla e interactuar con ella (por ejemplo, cargar modelos BPMN o generar código), **es necesario continuar con los pasos para ejecutar la interfaz de usuario (UI)**.
 
 ---
 
@@ -90,7 +90,7 @@ mvn spring-boot:run
 1. Navega a la carpeta de la interfaz:
 
 ```bash (Busca la ruta donde clonaste el repositorio)
-cd ruta\completa\hasta\StarkSw4BPM\UI
+cd < ruta\completa\hasta >\StarkSw4BPM\UI
 ```
 
 2. Crea un entorno virtual (solo la primera vez):
