@@ -1,6 +1,7 @@
 package com.starksw4b.pmn.starksw4bpmn.fileGenerator.external;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 
 import java.io.*;
 import java.net.URL;
@@ -24,16 +25,20 @@ public class ExternalProjectGeneratorService {
             "&dependencies=web,data-jpa,postgresql,thymeleaf";
 
     public Path generateExternalFormProject(Path parentDir) throws IOException {
-        System.out.println("🔧 Descargando proyecto externo desde Spring Initializr...");
+        System.out.println("🔧 Generando proyecto externo...");
 
         Path targetDir = parentDir.resolve("cliente");
 
-        // Crear directorio si no existe
-        if (!Files.exists(targetDir)) {
-            Files.createDirectories(targetDir);
+        // 🔥 Eliminar carpeta existente si ya hay un proyecto anterior
+        if (Files.exists(targetDir)) {
+            System.out.println("⚠ Eliminando proyecto anterior: " + targetDir);
+            FileSystemUtils.deleteRecursively(targetDir);
         }
 
-        // Descargar ZIP temporal
+        // Crear directorio limpio
+        Files.createDirectories(targetDir);
+
+        // Descargar el zip temporal
         Path zipPath = targetDir.resolve("external.zip");
         try (InputStream in = new URL(DOWNLOAD_URL).openStream()) {
             Files.copy(in, zipPath, StandardCopyOption.REPLACE_EXISTING);
@@ -41,14 +46,14 @@ public class ExternalProjectGeneratorService {
 
         System.out.println("📦 Proyecto ZIP descargado en: " + zipPath);
 
-        // Descomprimir el ZIP en targetDir
+        // Descomprimir ZIP
         unzip(zipPath.toString(), parentDir.toString());
 
-        // Borrar el ZIP
+        // Borrar ZIP
         Files.delete(zipPath);
 
-        System.out.println("✅ Proyecto externo generado en: " + parentDir.resolve("cliente").toAbsolutePath());
-        return parentDir.resolve("cliente");
+        System.out.println("✅ Proyecto externo generado en: " + targetDir.toAbsolutePath());
+        return targetDir;
     }
 
     private void unzip(String zipFilePath, String destDir) throws IOException {

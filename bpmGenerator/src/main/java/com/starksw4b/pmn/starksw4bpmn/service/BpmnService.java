@@ -3,26 +3,23 @@ package com.starksw4b.pmn.starksw4bpmn.service;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.*;
-import org.camunda.bpm.model.bpmn.instance.camunda.CamundaProperties;
+import org.camunda.bpm.model.bpmn.instance.camunda.CamundaFormData;
+import org.camunda.bpm.model.bpmn.instance.camunda.CamundaFormField;
 import com.starksw4b.pmn.starksw4bpmn.exception.InvalidBpmnException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
+
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
-import org.w3c.dom.*;
-import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.File;
 import java.util.*;
-
-import java.io.FileNotFoundException;
 
 @Service
 public class BpmnService {
 
-    // Ruta dentro del proyecto
     private static final String UPLOAD_DIR = "uploads/";
 
     public String processBpmnFile(MultipartFile file) throws IOException {
@@ -34,15 +31,26 @@ public class BpmnService {
         String uploadPath = projectDir + File.separator + UPLOAD_DIR;
         Files.createDirectories(Paths.get(uploadPath));
 
+        // ⚠ Eliminar todos los BPMN existentes antes de guardar el nuevo
+        Files.walk(Paths.get(uploadPath))
+                .filter(p -> !Files.isDirectory(p) && p.toString().endsWith(".bpmn"))
+                .forEach(p -> {
+                    try {
+                        Files.delete(p);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Error eliminando BPMN anterior: " + p, e);
+                    }
+                });
+
+        // Guardar el nuevo archivo
         String originalFileName = file.getOriginalFilename();
         String filePath = uploadPath + File.separator + originalFileName;
 
         File destino = new File(filePath);
         file.transferTo(destino);
 
-        System.out.println("Archivo BPMN guardado en: " + destino.getAbsolutePath());
-
-        return originalFileName; // devolver el nombre para usarlo después
+        System.out.println("✔ Archivo BPMN guardado: " + destino.getAbsolutePath());
+        return originalFileName;
     }
 
 
@@ -57,7 +65,6 @@ public class BpmnService {
 
         Map<String, List<String>> tareasPorTipo = new HashMap<>();
 
-        // Tipos de tareas a mapear
         Map<String, Class<? extends Task>> tipos = Map.of(
                 "userTask", UserTask.class,
                 "serviceTask", ServiceTask.class,
@@ -85,5 +92,47 @@ public class BpmnService {
 
         return tareasPorTipo;
     }
+
+    /**
+     * Extrae los campos de formularios tipo "Generated Task Forms" para cada UserTask.
+     */
+    public Map<String, List<FormFieldData>> getEnrichedUserTaskFormFields(String pathArchivo) throws Exception {
+        File archivo = new File(pathArchivo);
+
+        if (!archivo.exists()) {
+            throw new FileNotFoundException("El archivo no se encontró: " + pathArchivo);
+        }
+
+        BpmnModelInstance modelInstance = Bpmn.readModelFromFile(archivo);
+        Collection<UserTask> userTasks = modelInstance.getModelElementsByType(UserTask.class);
+
+        Map<String, List<FormFieldData>> formularioPorTarea = new LinkedHashMap<>();
+
+        for (UserTask task : userTasks) {
+            ExtensionElements extensionElements = task.getExtensionElements();
+            if (extensionElements != null) {
+                Collection<CamundaFormData> formularios =
+                        extensionElements.getElementsQuery()
+                                .filterByType(CamundaFormData.class)
+                                .list();
+
+                for (CamundaFormData form : formularios) {
+                    List<FormFieldData> campos = new ArrayList<>();
+                    for (CamundaFormField field : form.getCamundaFormFields()) {
+                        String id = field.getCamundaId();
+                        String type = field.getCamundaType();
+                        campos.add(new FormFieldData(id, type));
+                    }
+
+                    if (!campos.isEmpty()) {
+                        formularioPorTarea.put(task.getName(), campos);
+                    }
+                }
+            }
+        }
+
+        return formularioPorTarea;
+    }
+
 
 }

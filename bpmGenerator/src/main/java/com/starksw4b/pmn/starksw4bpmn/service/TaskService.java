@@ -18,29 +18,30 @@ public class TaskService {
     }
 
     public void saveTasksFromDto(TaskRequestDTO dto) {
+        // ✅ Eliminar tareas anteriores
+        repository.deleteAll();
+        System.out.println("🗑️ Todas las tareas anteriores fueron eliminadas.");
+
         List<TaskModel> tasks = new ArrayList<>();
 
         if (dto.getUserTasks() != null) {
             dto.getUserTasks().forEach((name, category) -> {
                 tasks.add(createTask(name, category, "userTasks"));
-                System.out.println("Tarea de usuario guardada: " + name + " - " + category);
-
+                System.out.println("✅ Tarea de usuario guardada: " + name + " - " + category);
             });
         }
 
         if (dto.getServiceTasks() != null) {
             dto.getServiceTasks().forEach((name, category) -> {
                 tasks.add(createTask(name, category, "serviceTasks"));
-                System.out.println("Tarea de servicio guardada: " + name + " - " + category);
-
+                System.out.println("✅ Tarea de servicio guardada: " + name + " - " + category);
             });
         }
 
         if (dto.getSendTasks() != null) {
             dto.getSendTasks().forEach((name, category) -> {
                 tasks.add(createTask(name, category, "sendTasks"));
-                System.out.println("Tarea de envío guardada: " + name + " - " + category);
-
+                System.out.println("✅ Tarea de envío guardada: " + name + " - " + category);
             });
         }
 
@@ -64,6 +65,4 @@ public class TaskService {
                 List.of("Formulario", "Camunda Forms", "Embedded or External Task Forms", "Generated Task Forms")
         );
     }
-
-
 }
