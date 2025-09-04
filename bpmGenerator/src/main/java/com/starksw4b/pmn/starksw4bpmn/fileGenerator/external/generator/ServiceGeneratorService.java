@@ -1,90 +1,200 @@
 package com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator;
 
-import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class ServiceGeneratorService {
 
-    public void generateServices(Path projectPath, Map<String, List<FormFieldData>> formFields) throws IOException {
-        Path basePackage = findBasePackage(projectPath);
-        Path serviceDir = basePackage.resolve("service");
-        Files.createDirectories(serviceDir);
+    public void generateServices(Path projectPath) throws IOException {
+        Path servicesDir = getServicesDirectory(projectPath);
+        Files.createDirectories(servicesDir);
 
-        for (Map.Entry<String, List<FormFieldData>> entry : formFields.entrySet()) {
-            String taskName = entry.getKey().replaceAll("\\s+", "");
-            String className = taskName + "Service";
-            String entityName = taskName;
-            String repositoryName = taskName + "Repository";
+        generateCamundaService(servicesDir);
+        generateFormularioService(servicesDir);
+    }
 
-            String serviceContent = String.format("""
-                package %s.service;
+    private Path getServicesDirectory(Path projectPath) {
+        return projectPath.resolve("src/main/java/com/form/client/services".replace(".", File.separator));
+    }
 
-                import %s.model.%s;
-                import %s.repository.%s;
-                import org.springframework.beans.factory.annotation.Autowired;
+    private void generateCamundaService(Path dir) throws IOException {
+        String content = """
+                package com.form.client.services;
+
+                import org.springframework.http.*;
                 import org.springframework.stereotype.Service;
+                import org.springframework.web.client.RestTemplate;
 
-                import java.util.List;
+                import java.util.HashMap;
+                import java.util.Map;
 
                 @Service
-                public class %s {
+                public class CamundaService {
 
-                    private final %s %sRepository;
+                    private final RestTemplate restTemplate;
 
-                    @Autowired
-                    public %s(%s %sRepository) {
-                        this.%sRepository = %sRepository;
+                    public CamundaService(RestTemplate restTemplate) {
+                        this.restTemplate = restTemplate;
                     }
 
-                    public List<%s> findAll() {
-                        return %sRepository.findAll();
-                    }
+                    public void iniciarProcesoFormulario(Map<String, Object> variables) {
+                        Map<String, Object> requestBody = new HashMap<>();
+                        requestBody.put("variables", variables);
 
-                    public %s save(%s data) {
-                        return %sRepository.save(data);
+                        HttpHeaders headers = new HttpHeaders();
+                        headers.setContentType(MediaType.APPLICATION_JSON);
+
+                        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+
+                        String url = "http://localhost:8080/engine-rest/process-definition/key/Process_19oqlmt/start";
+
+                        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+
+                        System.out.println("Respuesta de Camunda: " + response.getStatusCode());
+                        System.out.println("Body: " + response.getBody());
                     }
                 }
-                """,
-                    getBasePackage(basePackage),
-                    getBasePackage(basePackage), entityName,
-                    getBasePackage(basePackage), repositoryName,
-                    className,
-                    repositoryName, decapitalize(taskName),
-                    className, repositoryName, decapitalize(taskName),
-                    decapitalize(taskName), decapitalize(taskName),
-                    entityName,
-                    decapitalize(taskName),
-                    entityName, decapitalize(taskName),
-                    decapitalize(taskName)
-            );
+                """;
 
-            Files.writeString(serviceDir.resolve(className + ".java"), serviceContent);
-            System.out.println("🛠 Servicio generado: " + className + ".java");
-        }
+        Files.writeString(dir.resolve("CamundaService.java"), content);
+        System.out.println("🧩 CamundaService generado.");
     }
 
-    private Path findBasePackage(Path projectPath) throws IOException {
-        return Files.walk(projectPath.resolve("src/main/java"))
-                .filter(path -> path.toFile().getName().equals("ClienteApplication.java"))
-                .findFirst()
-                .map(Path::getParent)
-                .orElseThrow(() -> new IOException("No se encontró la clase principal del proyecto externo"));
-    }
+    private void generateFormularioService(Path dir) throws IOException {
+        String content = """
+                package com.form.client.services;
 
-    private String getBasePackage(Path basePath) {
-        return basePath.subpath(basePath.getNameCount() - 3, basePath.getNameCount())
-                .toString().replace(File.separator, ".");
-    }
+                import com.fasterxml.jackson.databind.JsonNode;
+                import com.form.client.dto.FormularioDTO;
+                import com.form.client.model.Formulario;
+                import com.form.client.repository.FormularioRepository;
+                import org.springframework.beans.factory.annotation.Value;
+                import org.springframework.http.ResponseEntity;
+                import org.springframework.stereotype.Service;
+                import org.springframework.web.client.RestTemplate;
 
-    private String decapitalize(String str) {
-        return str.substring(0, 1).toLowerCase() + str.substring(1);
+                import java.util.HashMap;
+                import java.util.List;
+                import java.util.Map;
+                import java.util.stream.Collectors;
+
+                @Service
+                public class FormularioService {
+
+                    private final FormularioRepository formularioRepository;
+                    private final RestTemplate restTemplate;
+                    private final String camundaRestUrl;
+                    private final String processDefinitionKey = "Process_19oqlmt"; // ajusta al ID de tu proceso
+
+                    public FormularioService(FormularioRepository formularioRepository,
+                                             RestTemplate restTemplate,
+                                             @Value("${camunda.rest.url}") String camundaRestUrl) {
+                        this.formularioRepository = formularioRepository;
+                        this.restTemplate = restTemplate;
+                        this.camundaRestUrl = camundaRestUrl;
+                    }
+
+                    public FormularioDTO guardarFormularioYIniciarProceso(FormularioDTO dto) {
+                        Formulario entidad = new Formulario();
+                        entidad.setNombre(dto.getNombre());
+                        entidad.setEdad(dto.getEdad());
+                        entidad.setFechaNacimiento(dto.getFechaNacimiento());
+                        entidad.setCorreo(dto.getCorreo());
+                        entidad.setActivo(dto.getActivo());
+                        formularioRepository.save(entidad);
+
+                        Map<String,Object> variables = Map.of(
+                                "formularioId", Map.of("value", entidad.getId(), "type", "Long"),
+                                "nombre",       Map.of("value", dto.getNombre(),   "type", "String"),
+                                "edad",         Map.of("value", dto.getEdad(),     "type", "Integer"),
+                                "correo",       Map.of("value", dto.getCorreo(),   "type", "String"),
+                                "activo",       Map.of("value", dto.getActivo(),   "type", "Boolean")
+                        );
+                        restTemplate.postForEntity(
+                                camundaRestUrl + "/process-definition/key/" + processDefinitionKey + "/start",
+                                Map.of("variables", variables),
+                                JsonNode.class
+                        );
+
+                        dto.setId(entidad.getId());
+                        return dto;
+                    }
+
+                    public List<FormularioDTO> obtenerTodos() {
+                        return formularioRepository.findAll()
+                                .stream()
+                                .map(this::convertirAFormularioDTO)
+                                .collect(Collectors.toList());
+                    }
+
+                    private FormularioDTO convertirAFormularioDTO(Formulario f) {
+                        FormularioDTO dto = new FormularioDTO();
+                        dto.setId(f.getId());
+                        dto.setNombre(f.getNombre());
+                        dto.setEdad(f.getEdad());
+                        dto.setFechaNacimiento(f.getFechaNacimiento());
+                        dto.setCorreo(f.getCorreo());
+                        dto.setActivo(f.getActivo());
+                        dto.setAprobado(f.getAprobado());
+                        return dto;
+                    }
+
+                    public void enviarPorId(Long id) {
+                        String queryUrl = camundaRestUrl + "/task"
+                                + "?variables=formularioId_eq_" + id
+                                + "&active=true";
+
+                        ResponseEntity<JsonNode> resp = restTemplate.getForEntity(queryUrl, JsonNode.class);
+                        JsonNode tasks = resp.getBody();
+
+                        if (tasks != null && tasks.isArray() && tasks.size() > 0) {
+                            String taskId = tasks.get(0).get("id").asText();
+                            restTemplate.postForEntity(
+                                    camundaRestUrl + "/task/" + taskId + "/complete",
+                                    Map.of(), Void.class
+                            );
+                        } else {
+                            throw new RuntimeException("No se encontró tarea activa para el formulario con ID: " + id);
+                        }
+                    }
+
+                    public void aprobarPorId(Long id) {
+                        Formulario formulario = formularioRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("No encontrado ID: " + id));
+                        formulario.setAprobado(true);
+                        formularioRepository.save(formulario);
+
+                        String queryUrl = camundaRestUrl + "/task"
+                                + "?variables=formularioId_eq_" + id
+                                + "&active=true";
+
+                        ResponseEntity<JsonNode> resp = restTemplate.getForEntity(queryUrl, JsonNode.class);
+                        JsonNode tasks = resp.getBody();
+                        if (tasks != null && tasks.isArray() && tasks.size() > 0) {
+                            String taskId = tasks.get(0).get("id").asText();
+                            restTemplate.postForEntity(
+                                    camundaRestUrl + "/task/" + taskId + "/complete",
+                                    Map.of(), Void.class
+                            );
+                        } else {
+                            throw new RuntimeException("No se encontró tarea activa para el formulario con ID: " + id);
+                        }
+                    }
+
+                    public FormularioDTO obtenerPorId(Long id) {
+                        Formulario entidad = formularioRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Formulario no encontrado con ID: " + id));
+                        return convertirAFormularioDTO(entidad);
+                    }
+                }
+                """;
+
+        Files.writeString(dir.resolve("FormularioService.java"), content);
+        System.out.println("📩 FormularioService generado.");
     }
 }

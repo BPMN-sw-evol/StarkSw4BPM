@@ -1,80 +1,99 @@
 package com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator;
 
-import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class DtoGeneratorService {
 
-    private static final String PACKAGE_NAME = "com.form.cliente.dto";
+    private static final String PACKAGE_NAME = "com.form.client.dto";
 
-    public void generateDtos(Path externalProjectPath, Map<String, List<FormFieldData>> formFieldsMap) throws IOException {
+    public void generateDtos(Path externalProjectPath) throws IOException {
         Path dtoDir = getDtoDirectory(externalProjectPath);
         Files.createDirectories(dtoDir);
 
-        for (Map.Entry<String, List<FormFieldData>> entry : formFieldsMap.entrySet()) {
-            String taskName = entry.getKey().replaceAll("\\s+", "");
-            List<FormFieldData> fields = entry.getValue();
+        Path filePath = dtoDir.resolve("FormularioDTO.java");
+        String classContent = """
+                package com.form.client.dto;
 
-            Path filePath = dtoDir.resolve(taskName + "DTO.java");
-            StringBuilder classContent = new StringBuilder();
+                import java.time.LocalDate;
 
-            classContent.append("package ").append(PACKAGE_NAME).append(";\n\n");
-            classContent.append("public class ").append(taskName).append("DTO {\n\n");
+                public class FormularioDTO {
 
-            // Atributos
-            for (FormFieldData field : fields) {
-                String javaType = mapCamundaTypeToJava(field.getType());
-                classContent.append("    private ").append(javaType).append(" ").append(field.getId()).append(";\n");
-            }
+                    private Long id;
+                    private String nombre;
+                    private Integer edad;
+                    private LocalDate fechaNacimiento;
+                    private String correo;
+                    private Boolean activo;
+                    private Boolean aprobado = false;
 
-            classContent.append("\n");
+                    public Long getId() {
+                        return id;
+                    }
 
-            // Getters y setters
-            for (FormFieldData field : fields) {
-                String javaType = mapCamundaTypeToJava(field.getType());
-                String fieldName = field.getId();
-                String capitalized = capitalize(fieldName);
+                    public void setId(Long id) {
+                        this.id = id;
+                    }
 
-                classContent.append("    public ").append(javaType).append(" get").append(capitalized).append("() {\n")
-                        .append("        return ").append(fieldName).append(";\n")
-                        .append("    }\n\n");
+                    public Boolean getAprobado() {
+                        return aprobado;
+                    }
 
-                classContent.append("    public void set").append(capitalized).append("(").append(javaType).append(" ").append(fieldName).append(") {\n")
-                        .append("        this.").append(fieldName).append(" = ").append(fieldName).append(";\n")
-                        .append("    }\n\n");
-            }
+                    public void setAprobado(Boolean aprobado) {
+                        this.aprobado = aprobado;
+                    }
 
-            classContent.append("}");
+                    public String getNombre() {
+                        return nombre;
+                    }
 
-            Files.writeString(filePath, classContent.toString());
-            System.out.println("✅ DTO generado: " + filePath.getFileName());
-        }
+                    public void setNombre(String nombre) {
+                        this.nombre = nombre;
+                    }
+
+                    public Integer getEdad() {
+                        return edad;
+                    }
+
+                    public void setEdad(Integer edad) {
+                        this.edad = edad;
+                    }
+
+                    public LocalDate getFechaNacimiento() {
+                        return fechaNacimiento;
+                    }
+
+                    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+                        this.fechaNacimiento = fechaNacimiento;
+                    }
+
+                    public String getCorreo() {
+                        return correo;
+                    }
+
+                    public void setCorreo(String correo) {
+                        this.correo = correo;
+                    }
+
+                    public Boolean getActivo() {
+                        return activo;
+                    }
+
+                    public void setActivo(Boolean activo) {
+                        this.activo = activo;
+                    }
+                }
+                """;
+
+        Files.writeString(filePath, classContent);
+        System.out.println("📦 DTO fijo generado: " + filePath.getFileName());
     }
 
     private Path getDtoDirectory(Path externalProjectPath) {
-        return externalProjectPath.resolve("src/main/java/com/form/cliente/dto".replace(".", File.separator));
-    }
-
-    private String mapCamundaTypeToJava(String camundaType) {
-        return switch (camundaType) {
-            case "boolean" -> "Boolean";
-            case "long" -> "Long";
-            case "double" -> "Double";
-            case "int", "integer" -> "Integer";
-            case "date" -> "String";
-            default -> "String";
-        };
-    }
-
-    private String capitalize(String input) {
-        if (input == null || input.isEmpty()) return input;
-        return input.substring(0, 1).toUpperCase() + input.substring(1);
+        return externalProjectPath.resolve("src/main/java/com/form/client/dto".replace(".", File.separator));
     }
 }

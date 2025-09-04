@@ -29,6 +29,7 @@ public class GeneratorController {
 
             return ResponseEntity.ok("Proyecto generado exitosamente en: " + projectPath.toAbsolutePath());
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error al generar el proyecto: " + e.getMessage());
         }

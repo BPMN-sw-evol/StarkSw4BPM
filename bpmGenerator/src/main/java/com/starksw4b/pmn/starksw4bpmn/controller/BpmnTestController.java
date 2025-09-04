@@ -53,8 +53,8 @@ public class BpmnTestController {
             Path externalPath = Path.of(System.getProperty("user.dir")).resolve("cliente");
 
             // Ejecutar generadores
-            dtoGeneratorService.generateDtos(externalPath, formFieldsMap);
-            entityGeneratorService.generateEntities(externalPath, formFieldsMap);
+            dtoGeneratorService.generateDtos(externalPath);
+            entityGeneratorService.generateEntities(externalPath);
 
             return ResponseEntity.ok("✅ DTOs y entidades generadas correctamente.");
         } catch (Exception e) {

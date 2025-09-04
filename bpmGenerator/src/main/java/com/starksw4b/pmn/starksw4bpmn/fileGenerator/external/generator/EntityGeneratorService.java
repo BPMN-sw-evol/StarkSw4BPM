@@ -1,92 +1,105 @@
 package com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator;
 
-import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class EntityGeneratorService {
 
-    private static final String PACKAGE_NAME = "com.form.cliente.model";
+    private static final String PACKAGE_NAME = "com.form.client.model";
 
-    public void generateEntities(Path externalProjectPath, Map<String, List<FormFieldData>> formFieldsMap) throws IOException {
+    public void generateEntities(Path externalProjectPath) throws IOException {
         Path modelDir = getModelDirectory(externalProjectPath);
         Files.createDirectories(modelDir);
 
-        for (Map.Entry<String, List<FormFieldData>> entry : formFieldsMap.entrySet()) {
-            String taskName = entry.getKey().replaceAll("\\s+", "");
-            String tableName = entry.getKey().toLowerCase().replaceAll("\\s+", "_");
-            List<FormFieldData> fields = entry.getValue();
+        Path filePath = modelDir.resolve("Formulario.java");
 
-            Path filePath = modelDir.resolve(taskName + ".java");
-            StringBuilder classContent = new StringBuilder();
+        String classContent = """
+                package com.form.client.model;
 
-            // Encabezado
-            classContent.append("package ").append(PACKAGE_NAME).append(";\n\n")
-                    .append("import jakarta.persistence.*;\n\n")
-                    .append("@Entity\n")
-                    .append("@Table(name = \"").append(tableName).append("\")\n")
-                    .append("public class ").append(taskName).append(" {\n\n");
+                import jakarta.persistence.*;
+                import java.time.LocalDate;
 
-            // Campo ID
-            classContent.append("    @Id\n")
-                    .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n")
-                    .append("    private Long id;\n\n");
+                @Entity
+                public class Formulario {
 
-            // Otros campos
-            for (FormFieldData field : fields) {
-                String javaType = mapCamundaTypeToJava(field.getType());
-                classContent.append("    private ").append(javaType).append(" ").append(field.getId()).append(";\n");
-            }
+                    @Id
+                    @GeneratedValue(strategy = GenerationType.IDENTITY)
+                    private Long id;
 
-            classContent.append("\n");
+                    private String nombre;
+                    private Integer edad;
+                    private LocalDate fechaNacimiento;
+                    private String correo;
+                    private Boolean activo;
+                    private Boolean aprobado = false;
 
-            // Getters y setters
-            classContent.append(generateGetterSetter("Long", "id"));
-            for (FormFieldData field : fields) {
-                String javaType = mapCamundaTypeToJava(field.getType());
-                classContent.append(generateGetterSetter(javaType, field.getId()));
-            }
+                    public Boolean getAprobado() {
+                        return aprobado;
+                    }
 
-            classContent.append("}");
+                    public void setAprobado(Boolean aprobado) {
+                        this.aprobado = aprobado;
+                    }
 
-            Files.writeString(filePath, classContent.toString());
-            System.out.println("✅ Entidad generada: " + filePath.getFileName());
-        }
+                    public Long getId() {
+                        return id;
+                    }
+
+                    public void setId(Long id) {
+                        this.id = id;
+                    }
+
+                    public String getNombre() {
+                        return nombre;
+                    }
+
+                    public void setNombre(String nombre) {
+                        this.nombre = nombre;
+                    }
+
+                    public Integer getEdad() {
+                        return edad;
+                    }
+
+                    public void setEdad(Integer edad) {
+                        this.edad = edad;
+                    }
+
+                    public LocalDate getFechaNacimiento() {
+                        return fechaNacimiento;
+                    }
+
+                    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+                        this.fechaNacimiento = fechaNacimiento;
+                    }
+
+                    public String getCorreo() {
+                        return correo;
+                    }
+
+                    public void setCorreo(String correo) {
+                        this.correo = correo;
+                    }
+
+                    public Boolean getActivo() {
+                        return activo;
+                    }
+
+                    public void setActivo(Boolean activo) {
+                        this.activo = activo;
+                    }
+                }
+                """;
+
+        Files.writeString(filePath, classContent);
+        System.out.println("🏗️ Entidad generada: " + filePath.getFileName());
     }
 
     private Path getModelDirectory(Path externalProjectPath) {
-        return externalProjectPath.resolve("src/main/java/com/form/cliente/model".replace(".", File.separator));
-    }
-
-    private String mapCamundaTypeToJava(String camundaType) {
-        return switch (camundaType) {
-            case "boolean" -> "Boolean";
-            case "long" -> "Long";
-            case "double" -> "Double";
-            case "int", "integer" -> "Integer";
-            case "date" -> "String";
-            default -> "String";
-        };
-    }
-
-    private String capitalize(String input) {
-        if (input == null || input.isEmpty()) return input;
-        return input.substring(0, 1).toUpperCase() + input.substring(1);
-    }
-
-    private String generateGetterSetter(String type, String field) {
-        String capitalized = capitalize(field);
-        return "    public " + type + " get" + capitalized + "() {\n" +
-                "        return " + field + ";\n" +
-                "    }\n\n" +
-                "    public void set" + capitalized + "(" + type + " " + field + ") {\n" +
-                "        this." + field + " = " + field + ";\n" +
-                "    }\n\n";
+        return externalProjectPath.resolve("src/main/java/com/form/client/model".replace(".", File.separator));
     }
 }

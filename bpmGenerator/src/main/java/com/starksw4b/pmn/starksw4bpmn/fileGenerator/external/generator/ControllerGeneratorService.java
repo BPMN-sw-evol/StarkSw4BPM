@@ -1,91 +1,91 @@
 package com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator;
 
-import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
 
 @Service
 public class ControllerGeneratorService {
 
-    public void generateControllers(Path projectPath, Map<String, List<FormFieldData>> formFields) throws IOException {
-        Path basePackage = findBasePackage(projectPath);
-        Path controllerDir = basePackage.resolve("controller");
+    private static final String CONTROLLER_PACKAGE = "com.form.client.controller";
+
+    public void generateControllers(Path projectPath) throws IOException {
+        Path controllerDir = getControllerDirectory(projectPath);
         Files.createDirectories(controllerDir);
 
-        for (Map.Entry<String, List<FormFieldData>> entry : formFields.entrySet()) {
-            String taskName = entry.getKey().replaceAll("\\s+", "");
-            String className = taskName + "Controller";
-            String entityName = taskName;
-            String serviceName = taskName + "Service";
+        String content = """
+                package com.form.client.controller;
 
-            String controllerContent = String.format("""
-                package %s.controller;
-
-                import %s.model.%s;
-                import %s.service.%s;
-                import org.springframework.beans.factory.annotation.Autowired;
+                import com.form.client.dto.FormularioDTO;
+                import com.form.client.services.FormularioService;
+                import org.springframework.stereotype.Controller;
                 import org.springframework.web.bind.annotation.*;
+                import org.springframework.ui.Model;
 
-                import java.util.List;
+                @Controller
+                @RequestMapping("/formulario")
+                public class FormularioController {
 
-                @RestController
-                @RequestMapping("/%s")
-                public class %s {
+                    private final FormularioService formularioService;
 
-                    private final %s %sService;
-
-                    @Autowired
-                    public %s(%s %sService) {
-                        this.%sService = %sService;
+                    public FormularioController(FormularioService formularioService) {
+                        this.formularioService = formularioService;
                     }
 
+                    // Lector de GET: si viene id, recargamos ese DTO; si no, uno nuevo
                     @GetMapping
-                    public List<%s> getAll() {
-                        return %sService.findAll();
+                    public String mostrarFormulario(
+                            @RequestParam(value="id", required=false) Long id,
+                            @RequestParam(value="exito", required=false) Boolean exito,
+                            Model model) {
+                        if (id != null) {
+                            FormularioDTO dto = formularioService.obtenerPorId(id);
+                            model.addAttribute("formulario", dto);
+                        } else {
+                            model.addAttribute("formulario", new FormularioDTO());
+                        }
+                        if (Boolean.TRUE.equals(exito)) {
+                            model.addAttribute("exito", true);
+                        }
+                        return "formulario";
                     }
 
+                    // POST guarda y redirige con id + exito=true
                     @PostMapping
-                    public %s save(@RequestBody %s data) {
-                        return %sService.save(data);
+                    public String guardarFormulario(@ModelAttribute("formulario") FormularioDTO formularioDTO) {
+                        FormularioDTO guardado = formularioService.guardarFormularioYIniciarProceso(formularioDTO);
+                        return "redirect:/formulario?id=" + guardado.getId() + "&exito=true";
+                    }
+
+                    @PostMapping("/enviar/id/{id}")
+                    public String enviarPorId(@PathVariable Long id) {
+                        formularioService.enviarPorId(id);
+                        return "redirect:/formulario/lista";
+                    }
+
+                    // POST aprobar sigue igual
+                    @PostMapping("/aprobar/id/{id}")
+                    public String aprobarPorId(@PathVariable Long id) {
+                        formularioService.aprobarPorId(id);
+                        return "redirect:/formulario/lista";
+                    }
+
+                    @GetMapping("/lista")
+                    public String listarFormularios(Model model) {
+                        model.addAttribute("formularios", formularioService.obtenerTodos());
+                        return "lista";
                     }
                 }
-                """,
-                    getBasePackage(basePackage),
-                    getBasePackage(basePackage), entityName,
-                    getBasePackage(basePackage), serviceName,
-                    entityName.toLowerCase(), className,
-                    serviceName, decapitalize(taskName),
-                    className, serviceName, decapitalize(taskName),
-                    decapitalize(taskName), decapitalize(taskName),
-                    entityName, decapitalize(taskName),
-                    entityName, entityName, decapitalize(taskName)
-            );
+                """;
 
-            Files.writeString(controllerDir.resolve(className + ".java"), controllerContent);
-            System.out.println("🌐 Controlador generado: " + className + ".java");
-        }
+        Files.writeString(controllerDir.resolve("FormularioController.java"), content);
+        System.out.println("🌐 FormularioController generado.");
     }
 
-    private Path findBasePackage(Path projectPath) throws IOException {
-        return Files.walk(projectPath.resolve("src/main/java"))
-                .filter(path -> path.toFile().getName().equals("ClienteApplication.java"))
-                .findFirst()
-                .map(Path::getParent)
-                .orElseThrow(() -> new IOException("No se encontró la clase principal del proyecto externo"));
-    }
-
-    private String getBasePackage(Path basePath) {
-        return basePath.subpath(basePath.getNameCount() - 3, basePath.getNameCount())
-                .toString().replace(File.separator, ".");
-    }
-
-    private String decapitalize(String str) {
-        return str.substring(0, 1).toLowerCase() + str.substring(1);
+    private Path getControllerDirectory(Path projectPath) {
+        return projectPath.resolve("src/main/java/com/form/client/controller".replace(".", File.separator));
     }
 }

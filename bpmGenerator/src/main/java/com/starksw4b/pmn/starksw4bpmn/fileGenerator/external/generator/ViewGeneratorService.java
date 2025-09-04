@@ -1,155 +1,112 @@
 package com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator;
 
-import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.file.*;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Service
 public class ViewGeneratorService {
 
-    public void generateViews(Path projectPath, Map<String, List<FormFieldData>> formFields) throws IOException {
+    public void generateViews(Path projectPath) throws IOException {
+        // Ruta sin subcarpeta "formulario"
         Path templatesDir = projectPath.resolve("src/main/resources/templates");
         Files.createDirectories(templatesDir);
 
-        for (Map.Entry<String, List<FormFieldData>> entry : formFields.entrySet()) {
-            String taskName = entry.getKey().replaceAll("\\s+", "").toLowerCase();
-            List<FormFieldData> fields = entry.getValue();
+        // Cambiar nombres a formulario.html y lista.html
+        Files.writeString(templatesDir.resolve("formulario.html"), getFormularioHtml());
+        Files.writeString(templatesDir.resolve("lista.html"), getListaHtml());
 
-            Path formDir = templatesDir.resolve(taskName);
-            Files.createDirectories(formDir);
-
-            // Formulario
-            String formHtml = generateFormHtml(taskName, fields);
-            Files.writeString(formDir.resolve("form.html"), formHtml);
-
-            // Listado
-            String listHtml = generateListHtml(taskName, fields);
-            Files.writeString(formDir.resolve("list.html"), listHtml);
-
-            System.out.println("📄 Vistas generadas para: " + taskName);
-        }
+        System.out.println("📄 Templates Thymeleaf generados: formulario.html y lista.html");
     }
 
-    private String generateFormHtml(String entity, List<FormFieldData> fields) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("""
-        <!DOCTYPE html>
-        <html xmlns:th="http://www.thymeleaf.org">
-        <head>
-            <meta charset="UTF-8">
-            <title>Formulario de """ + entity + """
-        </title>
-        </head>
-        <body>
-            <h1>Formulario de """ + entity + """
-            </h1>
-            <form th:action="@{/""" + entity + """
-                }" method="post" th:object="${""" + entity + """
-    }">
-    """);
+    private String getFormularioHtml() {
+        return """
+                <!DOCTYPE html>
+                <html xmlns:th="http://www.thymeleaf.org">
+                <head>
+                    <title>Formulario</title>
+                </head>
+                <body>
+                <h1>Formulario</h1>
 
-        for (FormFieldData field : fields) {
-            String id = field.getId();
-            String type = field.getType();
+                <form th:object="${formulario}"
+                      th:action="@{/formulario}"
+                      method="post">
+                    <label>Nombre:</label>
+                    <input type="text" th:field="*{nombre}" /><br/>
+                    <label>Edad:</label>
+                    <input type="number" th:field="*{edad}" /><br/>
+                    <label>Fecha de nacimiento:</label>
+                    <input type="date" th:field="*{fechaNacimiento}" /><br/>
+                    <label>Correo:</label>
+                    <input type="email" th:field="*{correo}" /><br/>
+                    <label>Activo:</label>
+                    <input type="checkbox" th:field="*{activo}" /><br/>
 
-            sb.append("    <label>").append(id).append(":</label>\n");
+                    <!-- Botón “Guardar” siempre -->
+                    <button type="submit">Guardar</button>
 
-            switch (type.toLowerCase()) {
-                case "boolean":
-                    sb.append("    <select th:field=\"*{").append(id).append("}\">\n")
-                            .append("        <option value=\"true\">Sí</option>\n")
-                            .append("        <option value=\"false\">No</option>\n")
-                            .append("    </select>\n");
-                    break;
-                case "long":
-                case "integer":
-                case "double":
-                case "number":
-                    sb.append("    <input type=\"number\" th:field=\"*{").append(id).append("}\" />\n");
-                    break;
-                case "date":
-                    sb.append("    <input type=\"date\" th:field=\"*{").append(id).append("}\" />\n");
-                    break;
-                case "email":
-                    sb.append("    <input type=\"email\" th:field=\"*{").append(id).append("}\" />\n");
-                    break;
-                case "string":
-                default:
-                    sb.append("    <input type=\"text\" th:field=\"*{").append(id).append("}\" />\n");
-                    break;
-            }
+                    <!-- Botón “Enviar” sólo cuando haya ID -->
+                    <button type="submit"
+                            th:if="${formulario.id != null}"
+                            th:formaction="@{'/formulario/enviar/id/' + ${formulario.id}}">
+                        Enviar
+                    </button>
+                </form>
 
-            sb.append("    <br/>\n");
-        }
-
-        sb.append("""
-                <button type="submit">Guardar</button>
-            </form>
-        </body>
-        </html>
-    """);
-
-        return sb.toString();
+                <!-- Mensajes -->
+                <div th:if="${exito}">
+                    <p style="color:green;">Formulario guardado con éxito.</p>
+                </div>
+                </body>
+                </html>
+                """;
     }
 
-    private String generateListHtml(String entity, List<FormFieldData> fields) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("""
-        <!DOCTYPE html>
-        <html xmlns:th="http://www.thymeleaf.org">
-        <head>
-            <meta charset="UTF-8">
-            <title>Lista de """ + entity + """
-        </title>
-        </head>
-        <body>
-            <h1>Lista de """ + entity + """
-            </h1>
-            <table border="1">
-                <thead>
+    private String getListaHtml() {
+        return """
+                <!DOCTYPE html>
+                <html xmlns:th="http://www.thymeleaf.org">
+                <head>
+                    <title>Lista de Formularios</title>
+                </head>
+                <body>
+                <h1>Lista de Formularios</h1>
+
+                <table border="1">
                     <tr>
-    """);
-
-        for (FormFieldData field : fields) {
-            sb.append("            <th>").append(field.getId()).append("</th>\n");
-        }
-
-        sb.append("""
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Edad</th>
+                        <th>Fecha de Nacimiento</th>
+                        <th>Correo</th>
+                        <th>Activo</th>
+                        <th>Aprobado</th>
+                        <th>Acción</th>
                     </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="item : ${items}">
-    """);
-
-        for (FormFieldData field : fields) {
-            String id = field.getId();
-            String type = field.getType();
-
-            switch (type.toLowerCase()) {
-                case "boolean":
-                    sb.append("            <td th:text=\"${item.").append(id).append("} ? 'Sí' : 'No'\"></td>\n");
-                    break;
-                case "date":
-                    sb.append("            <td th:text=\"${#temporals.format(item.").append(id).append(", 'dd/MM/yyyy')}\"></td>\n");
-                    break;
-                default:
-                    sb.append("            <td th:text=\"${item.").append(id).append("}\"></td>\n");
-                    break;
-            }
-        }
-
-        sb.append("""
+                    <tr th:each="formulario : ${formularios}">
+                        <td th:text="${formulario.id}"></td>
+                        <td th:text="${formulario.nombre}"></td>
+                        <td th:text="${formulario.edad}"></td>
+                        <td th:text="${formulario.fechaNacimiento}"></td>
+                        <td th:text="${formulario.correo}"></td>
+                        <td th:text="${formulario.activo}"></td>
+                        <td th:text="${formulario.aprobado}"></td>
+                        <td>
+                            <form th:if="${!formulario.aprobado}"
+                                  th:action="@{'/formulario/aprobar/id/' + ${formulario.id}}"
+                                  method="post">
+                                <button type="submit">Aprobar</button>
+                            </form>
+                            <span th:if="${formulario.aprobado}">Ya aprobado</span>
+                        </td>
                     </tr>
-                </tbody>
-            </table>
-        </body>
-        </html>
-    """);
+                </table>
 
-        return sb.toString();
+                </body>
+                </html>
+                """;
     }
 }

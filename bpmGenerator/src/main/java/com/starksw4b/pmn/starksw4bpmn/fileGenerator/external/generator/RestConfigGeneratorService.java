@@ -10,36 +10,32 @@ import java.nio.file.Path;
 public class RestConfigGeneratorService {
 
     public void generateRestConfig(Path projectPath) throws IOException {
-        Path configDir = projectPath.resolve("src/main/java/com/form/cliente/config");
+        Path configDir = projectPath.resolve("src/main/java/com/form/client/config".replace(".", "/"));
         Files.createDirectories(configDir);
 
-        String configClass = """
-            package com.form.cliente.config;
+        generateRestTemplateConfig(configDir);
+    }
 
+    private void generateRestTemplateConfig(Path configDir) throws IOException {
+        String restConfig = """
+            package com.form.client.config;
+
+            import org.springframework.boot.web.client.RestTemplateBuilder;
+            import org.springframework.context.annotation.Bean;
             import org.springframework.context.annotation.Configuration;
-            import org.springframework.web.servlet.config.annotation.CorsRegistry;
-            import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
-            import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+            import org.springframework.web.client.RestTemplate;
 
             @Configuration
-            public class WebConfig implements WebMvcConfigurer {
+            public class RestConfig {
 
-                @Override
-                public void addCorsMappings(CorsRegistry registry) {
-                    registry.addMapping("/**")
-                            .allowedOrigins("*")
-                            .allowedMethods("GET", "POST", "PUT", "DELETE")
-                            .allowedHeaders("*");
-                }
-
-                @Override
-                public void addViewControllers(ViewControllerRegistry registry) {
-                    registry.addViewController("/").setViewName("redirect:/index");
+                @Bean
+                public RestTemplate restTemplate(RestTemplateBuilder builder) {
+                    return builder.build();
                 }
             }
-        """;
+            """;
 
-        Files.writeString(configDir.resolve("WebConfig.java"), configClass);
-        System.out.println("⚙ Clase de configuración WebConfig generada.");
+        Files.writeString(configDir.resolve("RestConfig.java"), restConfig);
+        System.out.println("🔧 Clase RestConfig generada.");
     }
 }
