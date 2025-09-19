@@ -65,4 +65,8 @@ public class TaskService {
                 List.of("Formulario", "Camunda Forms", "Embedded or External Task Forms", "Generated Task Forms")
         );
     }
+
+    public List<TaskModel> getAllTasks() {
+        return repository.findAll();
+    }
 }

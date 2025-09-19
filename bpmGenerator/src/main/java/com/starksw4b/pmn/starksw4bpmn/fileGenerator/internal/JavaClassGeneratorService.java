@@ -8,33 +8,37 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 @Service
-public class DelegateExpressionGeneratorService {
+public class JavaClassGeneratorService {
 
     private static final String BASE_PATH = "../generatedProjects/generatedproject/BPM-Engine/src/main/java/com/example/workflow";
 
-    public void generateDelegateExpressionClass(String className) throws IOException {
+    public void generateJavaClass(String className) throws IOException {
         String content = generateClassContent(className);
         Path outputPath = Paths.get(BASE_PATH, className + ".java");
 
         Files.createDirectories(outputPath.getParent());
         Files.writeString(outputPath, content);
 
-        System.out.println("Clase generada para Delegate Expression en: " + outputPath.toAbsolutePath());
+        System.out.println("⚙ Clase JavaClass generada en: " + outputPath.toAbsolutePath());
     }
 
     private String generateClassContent(String className) {
-        String beanName = className.substring(0, 1).toLowerCase() + className.substring(1);
-
         return "package com.example.workflow;\n\n" +
                 "import org.camunda.bpm.engine.delegate.DelegateExecution;\n" +
                 "import org.camunda.bpm.engine.delegate.JavaDelegate;\n" +
+                "import org.springframework.beans.factory.annotation.Value;\n" +
                 "import org.springframework.stereotype.Service;\n\n" +
-                "@Service(\"" + beanName + "\")\n" +
+                "@Service\n" +
                 "public class " + className + " implements JavaDelegate {\n\n" +
+                "    @Value(\"${CONNECTION_CREDIT_REQUEST}\")\n" +
+                "    private String connectionDB;\n" +
+                "    @Value(\"${USER_DB}\")\n" +
+                "    private String userDB;\n" +
+                "    @Value(\"${PASSWORD_DB}\")\n" +
+                "    private String passwordDB;\n\n" +
                 "    @Override\n" +
                 "    public void execute(DelegateExecution execution) throws Exception {\n" +
-                "        // Aquí va la lógica de negocio\n" +
-                "        System.out.println(\"DelegateExpression ejecutado: " + className + "\");\n" +
+                "        System.out.println(\"⚙ Ejecutando tarea de servicio Java class...\");\n" +
                 "    }\n" +
                 "}\n";
     }

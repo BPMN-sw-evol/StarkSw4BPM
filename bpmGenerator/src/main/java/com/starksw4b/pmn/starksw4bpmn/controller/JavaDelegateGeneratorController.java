@@ -40,6 +40,16 @@ public class JavaDelegateGeneratorController {
         }
     }
 
+    @PostMapping("/generate-java-class")
+    public String generateJavaClass(@RequestParam String className) {
+        try {
+            generatorFacade.generarClaseJavaClass(className);
+            return "Clase JavaClass generada correctamente: " + className + ".java";
+        } catch (IOException e) {
+            return "Error al generar la clase JavaClass: " + e.getMessage();
+        }
+    }
+
     @PostMapping("/generate-delegate-expression")
     public String generateDelegateExpressionClass(@RequestParam String className) {
         try {

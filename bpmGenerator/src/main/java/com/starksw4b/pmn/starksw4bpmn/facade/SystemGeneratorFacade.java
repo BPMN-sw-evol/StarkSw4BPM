@@ -14,8 +14,18 @@ public class SystemGeneratorFacade {
     private final CamundaEngineFacade camundaEngineFacade;
     private final ExternalSystemFacade externalSystemFacade;
 
+    public SystemGeneratorFacade(CamundaEngineFacade camundaEngineFacade,
+                                 ExternalSystemFacade externalSystemFacade) {
+        this.camundaEngineFacade = camundaEngineFacade;
+        this.externalSystemFacade = externalSystemFacade;
+    }
+
     public void generarClaseJavaDelegate(String className) throws IOException {
         camundaEngineFacade.generarClaseJavaDelegate(className);
+    }
+
+    public void generarClaseJavaClass(String className) throws IOException {
+        camundaEngineFacade.generarClaseJavaClass(className);
     }
 
     public void generarClaseDelegateExpression(String className) throws IOException {
@@ -24,12 +34,6 @@ public class SystemGeneratorFacade {
 
     public void generarClaseSendTask(String className) throws IOException {
         camundaEngineFacade.generarClaseSendTask(className);
-    }
-
-    public SystemGeneratorFacade(CamundaEngineFacade camundaEngineFacade,
-                                 ExternalSystemFacade externalSystemFacade) {
-        this.camundaEngineFacade = camundaEngineFacade;
-        this.externalSystemFacade = externalSystemFacade;
     }
 
     public void generarClasesDesdeConfiguracion() throws IOException {
