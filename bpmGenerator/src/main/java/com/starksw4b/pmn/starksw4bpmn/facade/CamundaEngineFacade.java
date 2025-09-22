@@ -6,9 +6,11 @@ import com.starksw4b.pmn.starksw4bpmn.fileGenerator.internal.JavaDelegateGenerat
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.internal.SendTaskGeneratorService;
 import com.starksw4b.pmn.starksw4bpmn.model.TaskModel;
 import com.starksw4b.pmn.starksw4bpmn.service.BpmnEngineGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.service.BpmnModifierService;
 import com.starksw4b.pmn.starksw4bpmn.service.FileCopyService;
 import com.starksw4b.pmn.starksw4bpmn.service.TaskService;
 import org.springframework.stereotype.Service;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +28,7 @@ public class CamundaEngineFacade {
     private final BpmnEngineGeneratorService generatorService;
     private final TaskService taskService;
     private final FileCopyService fileCopyService;
+    private final BpmnModifierService bpmnModifierService;
 
     public CamundaEngineFacade(
             JavaDelegateGeneratorService javaDelegateGeneratorService,
@@ -34,7 +37,8 @@ public class CamundaEngineFacade {
             BpmnEngineGeneratorService generatorService,
             TaskService taskService,
             FileCopyService fileCopyService,
-            JavaClassGeneratorService javaClassGeneratorService
+            JavaClassGeneratorService javaClassGeneratorService,
+            BpmnModifierService bpmnModifierService
     ) {
         this.javaDelegateGeneratorService = javaDelegateGeneratorService;
         this.delegateExpressionGeneratorService = delegateExpressionGeneratorService;
@@ -43,43 +47,78 @@ public class CamundaEngineFacade {
         this.taskService = taskService;
         this.fileCopyService = fileCopyService;
         this.javaClassGeneratorService = javaClassGeneratorService;
+        this.bpmnModifierService = bpmnModifierService;
     }
 
     public Path generarProyectoCamunda() throws IOException {
         Path proyectoGenerado = generatorService.generateProjectFromTemplate();
 
-        // Copiar BPMN
+        // 1) Ubicar el BPMN más reciente en uploads/
         File folder = new File(System.getProperty("user.dir") + File.separator + "uploads");
         File[] archivos = folder.listFiles((dir, name) -> name.endsWith(".bpmn"));
-        if (archivos != null && archivos.length > 0) {
-            File archivoMasReciente = Arrays.stream(archivos)
-                    .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
-                    .orElseThrow();
-
-            Path bpmnOriginal = archivoMasReciente.toPath();
-            fileCopyService.saveBpmnFileFromPath(bpmnOriginal, proyectoGenerado);
-            System.out.println("✔ BPMN copiado dentro del proyecto generado.");
-        } else {
+        if (archivos == null || archivos.length == 0) {
             System.out.println("⚠ No se encontró ningún archivo BPMN en uploads/");
+            return proyectoGenerado;
         }
+        File archivoMasReciente = Arrays.stream(archivos)
+                .max((f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()))
+                .orElseThrow();
 
-        List<TaskModel> tasks = taskService.getAllTasks(); // trae todas las tareas
-
+        // 2) Recorrer TODAS las tareas (el nombre de la tarea en el BPMN es task.getName())
+        List<TaskModel> tasks = taskService.getAllTasks();
         for (TaskModel task : tasks) {
-            if (task.getTaskCategory() == null) continue; // seguridad
+            if (task.getTaskCategory() == null) continue;
 
-            String className = formatClassName(task.getName());
+            String rawName   = task.getName();                  // nombre exacto en el BPMN (para buscar)
+            String className = formatClassName(rawName);        // nombre clase a generar (sin espacios, válido para Java)
 
             switch (task.getTaskCategory()) {
-                case "Java class" ->
-                        javaClassGeneratorService.generateJavaClass(className);
-                case "Delegate expression" ->
-                        delegateExpressionGeneratorService.generateDelegateExpressionClass(className);
-                // cualquier otra categoría se ignora
+                case "Java class" -> {
+                    // Generar clase
+                    javaDelegateGeneratorService.generateJavaDelegateClass(className);
+                    // Modificar BPMN por NOMBRE de la tarea (serviceTask o sendTask)
+                    int changed = bpmnModifierService.upsertAttrByTaskName(
+                            archivoMasReciente,
+                            rawName,
+                            "camunda:class",
+                            "com.example.workflow." + className
+                    );
+                    if (changed == 0) {
+                        System.out.println("⚠ No se encontró tarea con name='" + rawName + "' para camunda:class");
+                    }
+                }
+                case "Delegate expression" -> {
+                    // Generar clase (siempre quieres que exista)
+                    delegateExpressionGeneratorService.generateDelegateExpressionClass(className);
+
+                    // Convertir el nombre de la clase a camelCase (primera minúscula)
+                    String beanName = Character.toLowerCase(className.charAt(0)) + className.substring(1);
+
+                    // Modificar BPMN
+                    int changed = bpmnModifierService.upsertAttrByTaskName(
+                            archivoMasReciente,
+                            rawName,
+                            "camunda:delegateExpression",
+                            "${" + beanName + "}"
+                    );
+                    if (changed == 0) {
+                        System.out.println("⚠ No se encontró tarea con name='" + rawName + "' para camunda:delegateExpression");
+                    }
+                }
+
+                default -> { /* otras categorías se ignoran */ }
             }
         }
+
+        // 3) Copiar el BPMN ya modificado al proyecto generado
+        fileCopyService.saveBpmnFileFromPath(archivoMasReciente.toPath(), proyectoGenerado);
+        System.out.println("✔ BPMN copiado dentro del proyecto generado (ya modificado).");
+
         return proyectoGenerado;
     }
+
+
+
 
     public void generarClaseJavaDelegate(String className) throws IOException {
         javaDelegateGeneratorService.generateJavaDelegateClass(className);
