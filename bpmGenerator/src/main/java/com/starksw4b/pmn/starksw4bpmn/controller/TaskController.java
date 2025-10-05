@@ -15,9 +15,23 @@ public class TaskController {
         this.service = service;
     }
 
+    // ✅ Importar tareas desde JSON
     @PostMapping("/import")
     public ResponseEntity<String> importTasks(@RequestBody TaskRequestDTO dto) {
         service.saveTasksFromDto(dto);
-        return ResponseEntity.ok("Tareas guardadas correctamente");
+        return ResponseEntity.ok("✅ Tareas guardadas correctamente en la base de datos.");
+    }
+
+    // ✅ Consultar todas las tareas (debug)
+    @GetMapping
+    public ResponseEntity<?> getAllTasks() {
+        return ResponseEntity.ok(service.getAllTasks());
+    }
+
+    // ✅ Consultar solo las UserTasks (con name + key)
+    @GetMapping("/user")
+    public ResponseEntity<?> getUserTasks() {
+        return ResponseEntity.ok(service.getUserTaskData());
     }
 }
+

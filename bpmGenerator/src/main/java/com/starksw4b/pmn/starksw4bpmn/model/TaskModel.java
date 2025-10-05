@@ -15,6 +15,11 @@ public class TaskModel {
 
     private String taskCategory;
 
+    private String taskKey;
+
+    public String getTaskKey() { return taskKey; }
+    public void setTaskKey(String taskKey) { this.taskKey = taskKey; }
+
     @Lob
     private String content;
 

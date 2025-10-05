@@ -30,6 +30,15 @@ public class DtoGeneratorService {
                     private String correo;
                     private Boolean activo;
                     private Boolean aprobado = false;
+                    private String taskId;
+                    
+                    public String getTaskId() {
+                        return taskId;
+                    }
+                
+                    public void setTaskId(String taskId) {
+                        this.taskId = taskId;
+                    }
 
                     public Long getId() {
                         return id;

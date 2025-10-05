@@ -42,16 +42,17 @@ public class BpmnUploadController {
     }
 
     @GetMapping("/tasks")
-    public ResponseEntity<Map<String, List<String>>> getBpmnTasks() {
+    public ResponseEntity<Map<String, List<Map<String, String>>>> getBpmnTasks() {
         try {
             String path = "uploads/" + nombreArchivoBpmn;
-            Map<String, List<String>> tareas = bpmnService.getTareasPorTipo(path);
+            Map<String, List<Map<String, String>>> tareas = bpmnService.getTareasPorTipo(path);
             return ResponseEntity.ok(tareas);
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
 
 }
 

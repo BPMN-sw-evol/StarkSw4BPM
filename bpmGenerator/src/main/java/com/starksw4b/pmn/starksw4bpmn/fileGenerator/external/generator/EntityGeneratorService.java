@@ -4,102 +4,66 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Service
 public class EntityGeneratorService {
 
-    private static final String PACKAGE_NAME = "com.form.client.model";
+    public void generateEntities(Path projectPath) throws IOException {
+        // Ruta destino
+        Path entityPath = projectPath.resolve(
+                "src/main/java/com/form/client/model/Formulario.java"
+        );
 
-    public void generateEntities(Path externalProjectPath) throws IOException {
-        Path modelDir = getModelDirectory(externalProjectPath);
-        Files.createDirectories(modelDir);
+        File parentDir = entityPath.toFile().getParentFile();
+        if (!parentDir.exists()) {
+            parentDir.mkdirs();
+        }
 
-        Path filePath = modelDir.resolve("Formulario.java");
+        StringBuilder sb = new StringBuilder();
+        sb.append("package com.form.client.model;\n\n")
+                .append("import jakarta.persistence.*;\n")
+                .append("\n")
+                .append("@Entity\n")
+                .append("public class Formulario {\n\n")
+                .append("    @Id\n")
+                .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n")
+                .append("    private Long id;\n\n")
+                .append("    private String nombre;\n")
+                .append("    private Integer edad;\n")
+                .append("    private String correo;\n")
+                .append("    private boolean activo;\n")
+                .append("    private boolean aprobado;\n")
+                .append("\n")
+                .append("    private String estado;\n")
+                .append("\n")
+                // Getters & Setters
+                .append("    public Long getId() { return id; }\n")
+                .append("    public void setId(Long id) { this.id = id; }\n\n")
 
-        String classContent = """
-                package com.form.client.model;
+                .append("    public String getNombre() { return nombre; }\n")
+                .append("    public void setNombre(String nombre) { this.nombre = nombre; }\n\n")
 
-                import jakarta.persistence.*;
-                import java.time.LocalDate;
+                .append("    public Integer getEdad() { return edad; }\n")
+                .append("    public void setEdad(Integer edad) { this.edad = edad; }\n\n")
 
-                @Entity
-                public class Formulario {
+                .append("    public String getCorreo() { return correo; }\n")
+                .append("    public void setCorreo(String correo) { this.correo = correo; }\n\n")
 
-                    @Id
-                    @GeneratedValue(strategy = GenerationType.IDENTITY)
-                    private Long id;
+                .append("    public boolean isActivo() { return activo; }\n")
+                .append("    public void setActivo(boolean activo) { this.activo = activo; }\n\n")
 
-                    private String nombre;
-                    private Integer edad;
-                    private LocalDate fechaNacimiento;
-                    private String correo;
-                    private Boolean activo;
-                    private Boolean aprobado = false;
+                .append("    public boolean isAprobado() { return aprobado; }\n")
+                .append("    public void setAprobado(boolean aprobado) { this.aprobado = aprobado; }\n\n")
 
-                    public Boolean getAprobado() {
-                        return aprobado;
-                    }
+                .append("    public String getEstado() { return estado; }\n")
+                .append("    public void setEstado(String estado) { this.estado = estado; }\n\n")
 
-                    public void setAprobado(Boolean aprobado) {
-                        this.aprobado = aprobado;
-                    }
+                .append("}\n");
 
-                    public Long getId() {
-                        return id;
-                    }
+        Files.writeString(entityPath, sb.toString());
 
-                    public void setId(Long id) {
-                        this.id = id;
-                    }
-
-                    public String getNombre() {
-                        return nombre;
-                    }
-
-                    public void setNombre(String nombre) {
-                        this.nombre = nombre;
-                    }
-
-                    public Integer getEdad() {
-                        return edad;
-                    }
-
-                    public void setEdad(Integer edad) {
-                        this.edad = edad;
-                    }
-
-                    public LocalDate getFechaNacimiento() {
-                        return fechaNacimiento;
-                    }
-
-                    public void setFechaNacimiento(LocalDate fechaNacimiento) {
-                        this.fechaNacimiento = fechaNacimiento;
-                    }
-
-                    public String getCorreo() {
-                        return correo;
-                    }
-
-                    public void setCorreo(String correo) {
-                        this.correo = correo;
-                    }
-
-                    public Boolean getActivo() {
-                        return activo;
-                    }
-
-                    public void setActivo(Boolean activo) {
-                        this.activo = activo;
-                    }
-                }
-                """;
-
-        Files.writeString(filePath, classContent);
-        System.out.println("🏗️ Entidad generada: " + filePath.getFileName());
-    }
-
-    private Path getModelDirectory(Path externalProjectPath) {
-        return externalProjectPath.resolve("src/main/java/com/form/client/model".replace(".", File.separator));
+        System.out.println("✅ Entidad generada en: " + entityPath);
     }
 }

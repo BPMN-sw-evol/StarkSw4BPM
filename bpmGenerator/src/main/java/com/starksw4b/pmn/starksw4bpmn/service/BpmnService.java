@@ -54,7 +54,7 @@ public class BpmnService {
     }
 
 
-    public Map<String, List<String>> getTareasPorTipo(String pathArchivo) throws Exception {
+    public Map<String, List<Map<String, String>>> getTareasPorTipo(String pathArchivo) throws Exception {
         File archivo = new File(pathArchivo);
 
         if (!archivo.exists()) {
@@ -63,7 +63,7 @@ public class BpmnService {
 
         BpmnModelInstance modelInstance = Bpmn.readModelFromFile(archivo);
 
-        Map<String, List<String>> tareasPorTipo = new HashMap<>();
+        Map<String, List<Map<String, String>>> tareasPorTipo = new HashMap<>();
 
         Map<String, Class<? extends Task>> tipos = Map.of(
                 "userTask", UserTask.class,
@@ -80,13 +80,19 @@ public class BpmnService {
             Class<? extends Task> clase = entry.getValue();
 
             Collection<? extends Task> tareas = modelInstance.getModelElementsByType(clase);
-            List<String> nombres = tareas.stream()
-                    .map(Task::getName)
-                    .filter(n -> n != null && !n.isBlank())
+
+            List<Map<String, String>> datos = tareas.stream()
+                    .map(t -> {
+                        Map<String, String> taskInfo = new HashMap<>();
+                        taskInfo.put("name", t.getName());  // ej: "Acknowledge as received"
+                        taskInfo.put("key", t.getId());     // ej: "Activity_0viydpl"
+                        return taskInfo;
+                    })
+                    .filter(m -> m.get("name") != null && !m.get("name").isBlank())
                     .toList();
 
-            if (!nombres.isEmpty()) {
-                tareasPorTipo.put(tipo, nombres);
+            if (!datos.isEmpty()) {
+                tareasPorTipo.put(tipo, datos);
             }
         }
 

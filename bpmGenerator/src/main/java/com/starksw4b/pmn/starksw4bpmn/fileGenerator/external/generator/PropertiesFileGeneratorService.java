@@ -20,7 +20,7 @@ public class PropertiesFileGeneratorService {
 
             spring.datasource.url=jdbc:postgresql://localhost:5432/db_credit
             spring.datasource.username=postgres
-            spring.datasource.password=root
+            spring.datasource.password=admin
             spring.datasource.driver-class-name=org.postgresql.Driver
 
             spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect

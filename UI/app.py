@@ -51,36 +51,49 @@ if st.session_state.tasks:
 
     # USER TASKS
     st.markdown("### 👤 User Tasks")
-    user_config = {}
+    user_config = []
     for task in tasks.get("userTask", []):
         option = st.selectbox(
-            f"Form type for: {task}",
+            f"Form type for: {task['name']} ({task['key']})",
             ["Camunda Forms", "Embedded or External Task Forms", "Generated Task Forms"],
-            key=f"user_{task}"
+            key=f"user_{task['key']}"
         )
-        user_config[task] = option
+        user_config.append({
+            "name": task["name"],
+            "key": task["key"],
+            "category": option
+        })
 
     # SERVICE TASKS
     st.markdown("### ⚙️ Service Tasks")
-    service_config = {}
+    service_config = []
     for task in tasks.get("serviceTask", []):
         option = st.selectbox(
-            f"Implementation for: {task}",
+            f"Implementation for: {task['name']} ({task['key']})",
             ["External", "Java class", "Expression", "Delegate expression", "Connector"],
-            key=f"service_{task}"
+            key=f"service_{task['key']}"
         )
-        service_config[task] = option
+        service_config.append({
+            "name": task["name"],
+            "key": task["key"],
+            "category": option
+        })
 
     # SEND TASKS
     st.markdown("### 📤 Send Tasks")
-    send_config = {}
+    send_config = []
     for task in tasks.get("sendTask", []):
         option = st.selectbox(
-            f"Implementation for: {task}",
+            f"Implementation for: {task['name']} ({task['key']})",
             ["External", "Java class", "Expression", "Delegate expression", "Connector"],
-            key=f"send_{task}"
+            key=f"send_{task['key']}"
         )
-        send_config[task] = option
+        send_config.append({
+            "name": task["name"],
+            "key": task["key"],
+            "category": option
+        })
+
 
     # Step 1: Session flag to know if config is saved
     if "config_saved" not in st.session_state:
