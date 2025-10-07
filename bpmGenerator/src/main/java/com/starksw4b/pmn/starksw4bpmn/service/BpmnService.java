@@ -1,14 +1,14 @@
 package com.starksw4b.pmn.starksw4bpmn.service;
 
+import com.starksw4b.pmn.starksw4bpmn.exception.InvalidBpmnException;
+import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.*;
 import org.camunda.bpm.model.bpmn.instance.camunda.CamundaFormData;
 import org.camunda.bpm.model.bpmn.instance.camunda.CamundaFormField;
-import com.starksw4b.pmn.starksw4bpmn.exception.InvalidBpmnException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import com.starksw4b.pmn.starksw4bpmn.model.FormFieldData;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -21,7 +21,16 @@ import java.util.*;
 public class BpmnService {
 
     private static final String UPLOAD_DIR = "uploads/";
+    private final TaskService taskService;
 
+    public BpmnService(TaskService taskService) {
+        this.taskService = taskService;
+    }
+
+    /**
+     * Guarda el archivo BPMN y automáticamente registra
+     * las tareas y compuertas en la base de datos.
+     */
     public String processBpmnFile(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             throw new InvalidBpmnException("⚠ El archivo BPMN está vacío.");
@@ -31,7 +40,7 @@ public class BpmnService {
         String uploadPath = projectDir + File.separator + UPLOAD_DIR;
         Files.createDirectories(Paths.get(uploadPath));
 
-        // ⚠ Eliminar todos los BPMN existentes antes de guardar el nuevo
+        // ⚠ Eliminar todos los BPMN anteriores
         Files.walk(Paths.get(uploadPath))
                 .filter(p -> !Files.isDirectory(p) && p.toString().endsWith(".bpmn"))
                 .forEach(p -> {
@@ -42,7 +51,7 @@ public class BpmnService {
                     }
                 });
 
-        // Guardar el nuevo archivo
+        // 📥 Guardar el nuevo archivo BPMN
         String originalFileName = file.getOriginalFilename();
         String filePath = uploadPath + File.separator + originalFileName;
 
@@ -53,58 +62,11 @@ public class BpmnService {
         return originalFileName;
     }
 
-
-    public Map<String, List<Map<String, String>>> getTareasPorTipo(String pathArchivo) throws Exception {
-        File archivo = new File(pathArchivo);
-
-        if (!archivo.exists()) {
-            throw new FileNotFoundException("El archivo no se encontró: " + pathArchivo);
-        }
-
-        BpmnModelInstance modelInstance = Bpmn.readModelFromFile(archivo);
-
-        Map<String, List<Map<String, String>>> tareasPorTipo = new HashMap<>();
-
-        Map<String, Class<? extends Task>> tipos = Map.of(
-                "userTask", UserTask.class,
-                "serviceTask", ServiceTask.class,
-                "sendTask", SendTask.class,
-                "receiveTask", ReceiveTask.class,
-                "manualTask", ManualTask.class,
-                "scriptTask", ScriptTask.class,
-                "businessRuleTask", BusinessRuleTask.class
-        );
-
-        for (Map.Entry<String, Class<? extends Task>> entry : tipos.entrySet()) {
-            String tipo = entry.getKey();
-            Class<? extends Task> clase = entry.getValue();
-
-            Collection<? extends Task> tareas = modelInstance.getModelElementsByType(clase);
-
-            List<Map<String, String>> datos = tareas.stream()
-                    .map(t -> {
-                        Map<String, String> taskInfo = new HashMap<>();
-                        taskInfo.put("name", t.getName());  // ej: "Acknowledge as received"
-                        taskInfo.put("key", t.getId());     // ej: "Activity_0viydpl"
-                        return taskInfo;
-                    })
-                    .filter(m -> m.get("name") != null && !m.get("name").isBlank())
-                    .toList();
-
-            if (!datos.isEmpty()) {
-                tareasPorTipo.put(tipo, datos);
-            }
-        }
-
-        return tareasPorTipo;
-    }
-
     /**
      * Extrae los campos de formularios tipo "Generated Task Forms" para cada UserTask.
      */
     public Map<String, List<FormFieldData>> getEnrichedUserTaskFormFields(String pathArchivo) throws Exception {
         File archivo = new File(pathArchivo);
-
         if (!archivo.exists()) {
             throw new FileNotFoundException("El archivo no se encontró: " + pathArchivo);
         }
@@ -125,9 +87,10 @@ public class BpmnService {
                 for (CamundaFormData form : formularios) {
                     List<FormFieldData> campos = new ArrayList<>();
                     for (CamundaFormField field : form.getCamundaFormFields()) {
-                        String id = field.getCamundaId();
-                        String type = field.getCamundaType();
-                        campos.add(new FormFieldData(id, type));
+                        campos.add(new FormFieldData(
+                                field.getCamundaId(),
+                                field.getCamundaType()
+                        ));
                     }
 
                     if (!campos.isEmpty()) {
@@ -139,6 +102,4 @@ public class BpmnService {
 
         return formularioPorTarea;
     }
-
-
 }

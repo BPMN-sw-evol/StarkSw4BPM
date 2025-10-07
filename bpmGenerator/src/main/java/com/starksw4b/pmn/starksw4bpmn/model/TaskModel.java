@@ -20,9 +20,6 @@ public class TaskModel {
     public String getTaskKey() { return taskKey; }
     public void setTaskKey(String taskKey) { this.taskKey = taskKey; }
 
-    @Lob
-    private String content;
-
     // Getters y Setters
 
     public Long getId() {
@@ -57,11 +54,4 @@ public class TaskModel {
         this.taskCategory = taskCategory;
     }
 
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
-        this.content = content;
-    }
 }

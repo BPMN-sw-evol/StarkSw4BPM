@@ -15,23 +15,28 @@ public class TaskController {
         this.service = service;
     }
 
-    // ✅ Importar tareas desde JSON
+    /**
+     * 📤 Importar tareas manualmente desde JSON (modo Streamlit)
+     */
     @PostMapping("/import")
     public ResponseEntity<String> importTasks(@RequestBody TaskRequestDTO dto) {
         service.saveTasksFromDto(dto);
         return ResponseEntity.ok("✅ Tareas guardadas correctamente en la base de datos.");
     }
 
-    // ✅ Consultar todas las tareas (debug)
+    /**
+     * 🔍 Consultar todas las tareas (debug)
+     */
     @GetMapping
     public ResponseEntity<?> getAllTasks() {
-        return ResponseEntity.ok(service.getAllTasks());
+        return ResponseEntity.ok(service.getAllTaskDTOs());
     }
 
-    // ✅ Consultar solo las UserTasks (con name + key)
+    /**
+     * 👤 Consultar solo las UserTasks (name + key)
+     */
     @GetMapping("/user")
     public ResponseEntity<?> getUserTasks() {
-        return ResponseEntity.ok(service.getUserTaskData());
+        return ResponseEntity.ok(service.getUserTaskDTOs());
     }
 }
-

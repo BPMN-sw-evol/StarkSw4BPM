@@ -1,13 +1,12 @@
 package com.starksw4b.pmn.starksw4bpmn.facade;
 
+import com.starksw4b.pmn.starksw4bpmn.DTOs.TaskResponseDTO;
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.dbProjectsGenerated.FolderCopyService;
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator.*;
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.ExternalProjectGeneratorService;
-import com.starksw4b.pmn.starksw4bpmn.model.TaskModel;
 import com.starksw4b.pmn.starksw4bpmn.service.TaskService;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,7 +24,7 @@ public class ExternalSystemFacade {
     private final ViewGeneratorService viewGeneratorService;
     private final RestConfigGeneratorService restConfigGeneratorService;
     private final FolderCopyService folderCopyService;
-    private final TaskService taskService; // 🔹 servicio que obtiene las tasks desde la DB
+    private final TaskService taskService;
 
     public ExternalSystemFacade(ExternalProjectGeneratorService externalProjectGeneratorService,
                                 DtoGeneratorService dtoGeneratorService,
@@ -50,39 +49,66 @@ public class ExternalSystemFacade {
     }
 
     public void generarSistemaExterno(Path proyectoBase, String bpmnFileName) throws Exception {
-        // 1. Crear el proyecto externo (cliente/)
+        // 1️⃣ Crear el proyecto externo (cliente/)
         Path externalPath = externalProjectGeneratorService.generateExternalFormProject(proyectoBase.getParent());
 
-        // 2. Obtener userTasks desde la DB
-        List<TaskModel> userTasksFromDb = taskService.getUserTasks();
-        System.out.println("📝 userTasks detectadas en DB: " + userTasksFromDb);
+        // 2️⃣ Obtener tareas (solo userTasks) desde la capa de servicio en formato DTO
+        List<TaskResponseDTO> userTasksFromDb = taskService.getUserTaskDTOs();
+        System.out.println("📝 userTasks detectadas en DB: " + userTasksFromDb.size());
 
-        if (userTasksFromDb.isEmpty()) {
-            System.out.println("⚠ No se encontraron userTasks, no se generarán controladores ni vistas.");
+        // 3️⃣ Obtener compuertas (Exclusive/Parallel) desde la DB
+        List<TaskResponseDTO> gatewaysFromDb = taskService.getTasksByCategory("gateway");
+        System.out.println("🌀 Compuertas detectadas en DB: " + gatewaysFromDb.size());
+
+        if (userTasksFromDb.isEmpty() && gatewaysFromDb.isEmpty()) {
+            System.out.println("⚠ No se encontraron tareas ni compuertas para generar el sistema externo.");
             return;
         }
 
-        // 🔹 Convertimos cada TaskModel en un Map con name + key
+        // 🔹 Convertir userTasks a formato compatible con generadores
         List<Map<String, String>> userTasks = new ArrayList<>();
-        for (TaskModel task : userTasksFromDb) {
+        for (TaskResponseDTO task : userTasksFromDb) {
             Map<String, String> taskInfo = new HashMap<>();
-            taskInfo.put("name", task.getName());         // nombre legible
-            taskInfo.put("key", task.getTaskKey());      // en tu modelo podrías mapear el taskDefinitionKey real aquí
+            taskInfo.put("name", task.getName());
+            taskInfo.put("key", task.getTaskKey());
             userTasks.add(taskInfo);
         }
 
-        // 3. Generar clases DTO, entidad, repositorios, servicios, controladores, vistas
+        // 4️⃣ Generar capas base del proyecto
         dtoGeneratorService.generateDtos(externalPath);
         entityGeneratorService.generateEntities(externalPath);
         repositoryGeneratorService.generateRepositories(externalPath);
         serviceGeneratorService.generateServices(externalPath);
 
-        controllerGeneratorService.generateControllers(externalPath, userTasks);
-        viewGeneratorService.generateViews(externalPath, userTasks);
+        // 5️⃣ Generar controladores y vistas de formularios
+        if (!userTasks.isEmpty()) {
+            controllerGeneratorService.generateControllers(externalPath, userTasks);
+            viewGeneratorService.generateViews(externalPath, userTasks);
+        }
 
+        // 6️⃣ Configuración REST global
         restConfigGeneratorService.generateRestConfig(externalPath);
 
-        // 4. Copiar cada subcarpeta de 'dbs' al mismo nivel que 'cliente' y 'BPMN-Engine'
+        // 7️⃣ Procesar compuertas BPMN (preparado para futuras expansiones)
+        if (!gatewaysFromDb.isEmpty()) {
+            for (TaskResponseDTO gateway : gatewaysFromDb) {
+                String type = gateway.getTaskType();
+                String name = gateway.getName();
+                String key = gateway.getTaskKey();
+
+                if ("exclusiveGateway".equalsIgnoreCase(type)) {
+                    System.out.println("⚙️ Detectada ExclusiveGateway → estructura condicional: " + name + " (" + key + ")");
+                    // 🔜 Futuro: GatewayDecisionGeneratorService.generate(...)
+                }
+
+                if ("parallelGateway".equalsIgnoreCase(type)) {
+                    System.out.println("⚙️ Detectada ParallelGateway → estructura paralela: " + name + " (" + key + ")");
+                    // 🔜 Futuro: ParallelGatewayGeneratorService.generate(...)
+                }
+            }
+        }
+
+        // 8️⃣ Copiar subcarpetas de dbs/
         Path sourceDbsDir = Path.of("dbs");
         Path destinationBase = proyectoBase.getParent();
 

@@ -1,21 +1,30 @@
 package com.starksw4b.pmn.starksw4bpmn.service;
 
 import com.starksw4b.pmn.starksw4bpmn.DTOs.TaskRequestDTO;
+import com.starksw4b.pmn.starksw4bpmn.DTOs.TaskResponseDTO;
 import com.starksw4b.pmn.starksw4bpmn.model.TaskModel;
 import com.starksw4b.pmn.starksw4bpmn.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.*;
 
 @Service
 public class TaskService {
 
     private final TaskRepository repository;
+    private final BpmnParserService bpmnParserService;
 
-    public TaskService(TaskRepository repository) {
+    public TaskService(TaskRepository repository, BpmnParserService bpmnParserService) {
         this.repository = repository;
+        this.bpmnParserService = bpmnParserService;
     }
 
+
+    /**
+     * 💾 Guarda las tareas recibidas desde Streamlit
+     * y agrega las compuertas detectadas en el BPMN actual.
+     */
     public void saveTasksFromDto(TaskRequestDTO dto) {
         repository.deleteAll();
         System.out.println("🗑️ Todas las tareas anteriores fueron eliminadas.");
@@ -55,28 +64,62 @@ public class TaskService {
             });
         }
 
+        // === Agregar compuertas desde el último BPMN subido ===
+        try {
+            File uploadsDir = new File(System.getProperty("user.dir") + "/uploads");
+            Optional<File> ultimoBpmn = Arrays.stream(Objects.requireNonNull(uploadsDir.listFiles()))
+                    .filter(f -> f.getName().endsWith(".bpmn"))
+                    .max(Comparator.comparingLong(File::lastModified));
+
+            if (ultimoBpmn.isPresent()) {
+                String bpmnPath = ultimoBpmn.get().getAbsolutePath();
+                Map<String, List<Map<String, String>>> elementos = bpmnParserService.parseElements(bpmnPath);
+
+                for (Map.Entry<String, List<Map<String, String>>> entry : elementos.entrySet()) {
+                    String tipo = entry.getKey();
+                    if (tipo.endsWith("Gateway")) { // Solo compuertas
+                        for (Map<String, String> data : entry.getValue()) {
+                            TaskModel gateway = new TaskModel();
+                            gateway.setName(data.get("name"));
+                            gateway.setTaskKey(data.get("key"));
+                            gateway.setTaskType(tipo);
+                            gateway.setTaskCategory("gateway");
+                            tasks.add(gateway);
+                            System.out.println("🌀 Compuerta agregada: " + data.get("name") + " (" + tipo + ")");
+                        }
+                    }
+                }
+            } else {
+                System.out.println("⚠ No se encontró ningún archivo BPMN en uploads/. No se agregaron compuertas.");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Error al agregar compuertas: " + e.getMessage());
+        }
+
         repository.saveAll(tasks);
+        System.out.println("💾 Total guardado: " + tasks.size() + " elementos (tareas + compuertas).");
     }
+
+    // ======================= MÉTODOS AUXILIARES =======================
 
     private TaskModel createTask(String name, String key, String type, String category) {
         TaskModel task = new TaskModel();
-        task.setName(name);        // Nombre visible en BPMN
-        task.setTaskKey(key);      // taskDefinitionKey
-        task.setTaskType(type);    // userTasks / serviceTasks / sendTasks
-        task.setTaskCategory(category); // categoría elegida en Streamlit
+        task.setName(name);
+        task.setTaskKey(key);
+        task.setTaskType(type);
+        task.setTaskCategory(category);
         return task;
     }
 
-
     private TaskModel createTask(String name, String taskKey, String type) {
         TaskModel task = new TaskModel();
-        task.setName(name);         // nombre visible en BPMN
-        task.setTaskKey(taskKey);   // 🔹 taskDefinitionKey (ej: Activity_0viydpl)
+        task.setName(name);
+        task.setTaskKey(taskKey);
         task.setTaskType(type);
         return task;
     }
 
-    // === Getters ===
+    // ======================= CONSULTAS =======================
 
     public List<TaskModel> getServiceTasks() {
         return repository.findByTaskType("serviceTasks");
@@ -90,22 +133,54 @@ public class TaskService {
         return repository.findAll();
     }
 
-    // ✅ devuelve solo nombres (compatibilidad)
     public List<String> getUserTaskNames() {
         return getUserTasks().stream()
                 .map(TaskModel::getName)
                 .toList();
     }
 
-    // ✅ devuelve pares name + key para el generador
     public List<Map<String, String>> getUserTaskData() {
         List<Map<String, String>> result = new ArrayList<>();
         for (TaskModel task : getUserTasks()) {
             Map<String, String> map = new HashMap<>();
-            map.put("name", task.getName());     // ej: Acknowledge as received
-            map.put("key", task.getTaskKey());   // ej: Activity_0viydpl
+            map.put("name", task.getName());
+            map.put("key", task.getTaskKey());
             result.add(map);
         }
         return result;
+    }
+
+    public List<TaskResponseDTO> getAllTaskDTOs() {
+        return repository.findAll().stream()
+                .map(t -> new TaskResponseDTO(
+                        t.getName(),
+                        t.getTaskKey(),
+                        t.getTaskType(),
+                        t.getTaskCategory()
+                ))
+                .toList();
+    }
+
+    public List<TaskResponseDTO> getUserTaskDTOs() {
+        return repository.findByTaskType("userTasks").stream()
+                .map(t -> new TaskResponseDTO(
+                        t.getName(),
+                        t.getTaskKey(),
+                        t.getTaskType(),
+                        t.getTaskCategory()
+                ))
+                .toList();
+    }
+
+    public List<TaskResponseDTO> getTasksByCategory(String category) {
+        return repository.findAll().stream()
+                .filter(t -> t.getTaskCategory().equalsIgnoreCase(category))
+                .map(t -> new TaskResponseDTO(
+                        t.getName(),
+                        t.getTaskKey(),
+                        t.getTaskType(),
+                        t.getTaskCategory()
+                ))
+                .toList();
     }
 }
