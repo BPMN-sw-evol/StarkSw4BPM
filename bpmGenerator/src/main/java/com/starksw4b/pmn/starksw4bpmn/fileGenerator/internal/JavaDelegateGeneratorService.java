@@ -37,9 +37,7 @@ public class JavaDelegateGeneratorService {
                 "    private static final Logger LOGGER = LoggerFactory.getLogger(" + className + ".class);\n\n" +
                 "    @Override\n" +
                 "    public void execute(DelegateExecution execution) throws Exception {\n" +
-                "        String solicitudId = (String) execution.getVariable(\"solicitudId\");\n" +
-                "        LOGGER.info(\"Registrando solicitud de análisis de garantía \");\n" +
-                "        execution.setVariable(\"garantiaRegistrada\", true);\n" +
+                "        System.out.println(\"DelegateExpression ejecutado: " + className + "\");\n" +
                 "    }\n" +
                 "}\n";
     }
