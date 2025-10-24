@@ -9,69 +9,119 @@ import java.nio.file.Path;
 @Service
 public class ServiceGeneratorService {
 
-    public void generateServices(Path projectPath) throws IOException {
+    public void generateServices(Path projectPath, String processId) throws IOException {
         Path servicesDir = getServicesDirectory(projectPath);
         Files.createDirectories(servicesDir);
 
         generateCamundaService(servicesDir);
-        generateFormularioService(servicesDir);
+        generateFormularioService(servicesDir, processId);
     }
 
     private Path getServicesDirectory(Path projectPath) {
         return projectPath.resolve("src/main/java/com/form/client/services".replace(".", File.separator));
     }
 
+    /**
+     * ✅ Genera un CamundaService completamente funcional con soporte para processInstanceId y decisiones.
+     */
     private void generateCamundaService(Path dir) throws IOException {
         String content = """
-                package com.form.client.services;
+            package com.form.client.services;
 
-                import org.springframework.http.*;
-                import org.springframework.stereotype.Service;
-                import org.springframework.web.client.RestTemplate;
+            import org.springframework.http.*;
+            import org.springframework.stereotype.Service;
+            import org.springframework.web.client.RestTemplate;
+            import java.util.*;
 
-                import java.util.HashMap;
-                import java.util.Map;
+            @Service
+            public class CamundaService {
 
-                @Service
-                public class CamundaService {
+                private final RestTemplate restTemplate;
 
-                    private final RestTemplate restTemplate;
+                public CamundaService(RestTemplate restTemplate) {
+                    this.restTemplate = restTemplate;
+                }
 
-                    public CamundaService(RestTemplate restTemplate) {
-                        this.restTemplate = restTemplate;
-                    }
+                /**
+                 * 🔹 Inicia una instancia de proceso con variables iniciales y devuelve el ID de la instancia.
+                 */
+                public String iniciarProceso(String processDefinitionKey, Map<String, Object> variables) {
+                    Map<String, Object> body = new HashMap<>();
+                    Map<String, Object> vars = new HashMap<>();
 
-                    public void iniciarProceso(String processDefinitionKey, Map<String, Object> variables) {
-                        Map<String, Object> requestBody = new HashMap<>();
-                        requestBody.put("variables", variables);
+                    variables.forEach((key, value) -> {
+                        Map<String, Object> var = new HashMap<>();
+                        var.put("value", value);
+                        vars.put(key, var);
+                    });
+                    body.put("variables", vars);
 
-                        HttpHeaders headers = new HttpHeaders();
-                        headers.setContentType(MediaType.APPLICATION_JSON);
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.setContentType(MediaType.APPLICATION_JSON);
 
-                        HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+                    HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+                    String url = "http://localhost:8080/engine-rest/process-definition/key/" + processDefinitionKey + "/start";
 
-                        String url = "http://localhost:8080/engine-rest/process-definition/key/" 
-                                     + processDefinitionKey + "/start";
+                    ResponseEntity<Map> response = restTemplate.postForEntity(url, request, Map.class);
 
-                        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+                    String processInstanceId = (String) response.getBody().get("id");
+                    System.out.println("✅ Proceso iniciado con instancia ID = " + processInstanceId);
+                    return processInstanceId;
+                }
 
-                        System.out.println("Respuesta de Camunda: " + response.getStatusCode());
-                        System.out.println("Body: " + response.getBody());
-                    }
+                /**
+                 * 🔹 Completa una tarea por su ID enviando variables.
+                 */
+                public void completarTarea(String taskId, Map<String, Object> variables) {
+                    Map<String, Object> body = new HashMap<>();
+                    Map<String, Object> vars = new HashMap<>();
 
-                    public void completarTarea(String taskId, Map<String, Object> variables) {
-                        String url = "http://localhost:8080/engine-rest/task/" + taskId + "/complete";
-                        restTemplate.postForEntity(url, Map.of("variables", variables), Void.class);
-                        System.out.println("✅ Tarea completada en Camunda: " + taskId);
+                    variables.forEach((key, value) -> {
+                        Map<String, Object> var = new HashMap<>();
+                        var.put("value", value);
+                        vars.put(key, var);
+                    });
+                    body.put("variables", vars);
+
+                    String url = "http://localhost:8080/engine-rest/task/" + taskId + "/complete";
+                    restTemplate.postForEntity(url, body, Void.class);
+                    System.out.println("✅ Tarea completada en Camunda: " + taskId + " con vars=" + variables);
+                }
+
+                /**
+                 * 🔹 Envía una variable de decisión (true/false) a la instancia de proceso.
+                 */
+                public void enviarVariableDeDecision(String processInstanceId, Map<String, Object> variables) {
+                    try {
+                        String taskUrl = "http://localhost:8080/engine-rest/task?processInstanceId=" + processInstanceId;
+                        ResponseEntity<Map[]> response = restTemplate.getForEntity(taskUrl, Map[].class);
+                        Map[] tareas = response.getBody();
+
+                        if (tareas == null || tareas.length == 0) {
+                            System.out.println("⚠ No se encontró tarea activa para la instancia con ID=" + processInstanceId);
+                            return;
+                        }
+
+                        String taskId = (String) tareas[0].get("id");
+                        completarTarea(taskId, variables);
+                        System.out.println("📤 Variable enviada al proceso " + processInstanceId + ": " + variables);
+
+                    } catch (Exception e) {
+                        System.err.println("❌ Error enviando variable de decisión: " + e.getMessage());
+                        e.printStackTrace();
                     }
                 }
-                """;
+            }
+            """;
 
         Files.writeString(dir.resolve("CamundaService.java"), content);
-        System.out.println("🧩 CamundaService generado.");
+        System.out.println("🧩 CamundaService generado con soporte de processInstanceId y decisiones.");
     }
 
-    private void generateFormularioService(Path dir) throws IOException {
+    /**
+     * ✅ Genera un FormularioService con persistencia del processInstanceId y envío correcto de tareas.
+     */
+    private void generateFormularioService(Path dir, String processId) throws IOException {
         String content = """
             package com.form.client.services;
 
@@ -83,10 +133,7 @@ public class ServiceGeneratorService {
             import org.springframework.http.ResponseEntity;
             import org.springframework.stereotype.Service;
             import org.springframework.web.client.RestTemplate;
-
-            import java.util.ArrayList;
-            import java.util.List;
-            import java.util.Map;
+            import java.util.*;
             import java.util.stream.Collectors;
 
             @Service
@@ -94,47 +141,50 @@ public class ServiceGeneratorService {
 
                 private final FormularioRepository formularioRepository;
                 private final RestTemplate restTemplate;
+                private final CamundaService camundaService;
                 private final String camundaRestUrl;
                 private final String processDefinitionKey;
 
                 public FormularioService(FormularioRepository formularioRepository,
                                          RestTemplate restTemplate,
-                                         @Value("${camunda.rest.url:http://localhost:8080/engine-rest}") String camundaRestUrl,
-                                         @Value("${camunda.process.key:Process_19oqlmt}") String processDefinitionKey) {
+                                         CamundaService camundaService,
+                                         @Value("${camunda.rest.url:http://localhost:8080/engine-rest}") String camundaRestUrl) {
                     this.formularioRepository = formularioRepository;
                     this.restTemplate = restTemplate;
+                    this.camundaService = camundaService;
                     this.camundaRestUrl = camundaRestUrl;
-                    this.processDefinitionKey = processDefinitionKey;
+                    this.processDefinitionKey = "%s";
                 }
 
-                // === Primer userTask: guardar + iniciar proceso ===
+                /**
+                 * 🔹 Guarda el formulario y crea la instancia Camunda (guardando processInstanceId).
+                 */
                 public FormularioDTO guardarFormularioYIniciarProceso(FormularioDTO dto) {
                     Formulario entidad = new Formulario();
                     entidad.setNombre(dto.getNombre());
                     entidad.setEdad(dto.getEdad());
                     entidad.setCorreo(dto.getCorreo());
-                    entidad.setActivo(dto.getActivo()); // 👈 usamos getActivo
+                    entidad.setActivo(dto.getActivo());
                     formularioRepository.save(entidad);
 
-                    Map<String,Object> variables = Map.of(
-                            "formularioId", Map.of("value", entidad.getId(), "type", "Long"),
-                            "nombre",       Map.of("value", dto.getNombre(), "type", "String"),
-                            "edad",         Map.of("value", dto.getEdad(),   "type", "Integer"),
-                            "correo",       Map.of("value", dto.getCorreo(), "type", "String"),
-                            "activo",       Map.of("value", dto.getActivo(), "type", "Boolean")
-                    );
+                    Map<String, Object> variables = new HashMap<>();
+                    variables.put("formularioId", entidad.getId());
+                    variables.put("nombre", dto.getNombre());
+                    variables.put("edad", dto.getEdad());
+                    variables.put("correo", dto.getCorreo());
+                    variables.put("activo", dto.getActivo());
 
-                    restTemplate.postForEntity(
-                            camundaRestUrl + "/process-definition/key/" + processDefinitionKey + "/start",
-                            Map.of("variables", variables),
-                            JsonNode.class
-                    );
+                    String processInstanceId = camundaService.iniciarProceso(processDefinitionKey, variables);
+                    entidad.setProcessInstanceId(processInstanceId);
+                    formularioRepository.save(entidad);
 
                     dto.setId(entidad.getId());
+                    dto.setProcessInstanceId(processInstanceId);
+
+                    System.out.println("✅ Formulario ID=" + entidad.getId() + " vinculado a instancia Camunda=" + processInstanceId);
                     return dto;
                 }
 
-                // === Listado completo desde BD ===
                 public List<FormularioDTO> obtenerTodos() {
                     return formularioRepository.findAll()
                             .stream()
@@ -142,7 +192,6 @@ public class ServiceGeneratorService {
                             .collect(Collectors.toList());
                 }
 
-                // === Listar pendientes en Camunda por taskDefinitionKey ===
                 public List<FormularioDTO> obtenerPendientesPorTask(String taskDefinitionKey) {
                     String queryUrl = camundaRestUrl + "/task"
                             + "?taskDefinitionKey=" + taskDefinitionKey
@@ -168,7 +217,7 @@ public class ServiceGeneratorService {
 
                                 formularioRepository.findById(formularioId).ifPresent(f -> {
                                     FormularioDTO dto = convertirAFormularioDTO(f);
-                                    dto.setTaskId(taskId); // vinculamos con Camunda
+                                    dto.setTaskId(taskId);
                                     pendientes.add(dto);
                                 });
                             }
@@ -177,21 +226,23 @@ public class ServiceGeneratorService {
                     return pendientes;
                 }
 
-                // === Completar tarea por taskId (aprobar) ===
                 public void aprobarPorTaskId(String taskId) {
                     restTemplate.postForEntity(
-                        camundaRestUrl + "/task/" + taskId + "/complete",
-                        Map.of(),
-                        Void.class
+                            camundaRestUrl + "/task/" + taskId + "/complete",
+                            Map.of(),
+                            Void.class
                     );
                 }
 
-                // === Enviar: avanza la tarea activa por formularioId ===
                 public void enviarPorId(Long id) {
-                    String queryUrl = camundaRestUrl + "/task"
-                            + "?variables=formularioId_eq_" + id
-                            + "&active=true";
+                    Formulario formulario = formularioRepository.findById(id)
+                            .orElseThrow(() -> new RuntimeException("Formulario no encontrado con ID: " + id));
 
+                    if (formulario.getProcessInstanceId() == null) {
+                        throw new RuntimeException("⚠ El formulario con ID " + id + " no tiene processInstanceId asociado.");
+                    }
+
+                    String queryUrl = camundaRestUrl + "/task?processInstanceId=" + formulario.getProcessInstanceId();
                     ResponseEntity<JsonNode> resp = restTemplate.getForEntity(queryUrl, JsonNode.class);
                     JsonNode tasks = resp.getBody();
 
@@ -202,12 +253,12 @@ public class ServiceGeneratorService {
                                 Map.of(),
                                 Void.class
                         );
+                        System.out.println("✅ Tarea completada para formulario ID=" + id + ", instancia=" + formulario.getProcessInstanceId());
                     } else {
-                        throw new RuntimeException("No se encontró tarea activa para el formulario con ID: " + id);
+                        throw new RuntimeException("No se encontró tarea activa para la instancia del formulario con ID: " + id);
                     }
                 }
 
-                // === Obtener un formulario por ID de la BD ===
                 public FormularioDTO obtenerPorId(Long id) {
                     Formulario entidad = formularioRepository.findById(id)
                             .orElseThrow(() -> new RuntimeException("Formulario no encontrado con ID: " + id));
@@ -220,14 +271,15 @@ public class ServiceGeneratorService {
                     dto.setNombre(f.getNombre());
                     dto.setEdad(f.getEdad());
                     dto.setCorreo(f.getCorreo());
-                    dto.setActivo(f.isActivo()); // 👈 corregido
+                    dto.setActivo(f.isActivo());
                     dto.setAprobado(f.isAprobado());
+                    dto.setProcessInstanceId(f.getProcessInstanceId());
                     return dto;
                 }
             }
-            """;
+            """.formatted(processId);
 
         Files.writeString(dir.resolve("FormularioService.java"), content);
-        System.out.println("📩 FormularioService generado.");
+        System.out.println("📩 FormularioService generado (processKey: " + processId + ")");
     }
 }

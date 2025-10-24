@@ -20,10 +20,9 @@ public class TaskService {
         this.bpmnParserService = bpmnParserService;
     }
 
-
     /**
      * 💾 Guarda las tareas recibidas desde Streamlit
-     * y agrega las compuertas detectadas en el BPMN actual.
+     * y agrega las compuertas detectadas en el BPMN actual (incluyendo condiciones).
      */
     public void saveTasksFromDto(TaskRequestDTO dto) {
         repository.deleteAll();
@@ -75,9 +74,10 @@ public class TaskService {
                 String bpmnPath = ultimoBpmn.get().getAbsolutePath();
                 Map<String, List<Map<String, String>>> elementos = bpmnParserService.parseElements(bpmnPath);
 
+                // 🔹 Guardar compuertas (exclusive / parallel)
                 for (Map.Entry<String, List<Map<String, String>>> entry : elementos.entrySet()) {
                     String tipo = entry.getKey();
-                    if (tipo.endsWith("Gateway")) { // Solo compuertas
+                    if (tipo.endsWith("Gateway")) {
                         for (Map<String, String> data : entry.getValue()) {
                             TaskModel gateway = new TaskModel();
                             gateway.setName(data.get("name"));
@@ -89,15 +89,56 @@ public class TaskService {
                         }
                     }
                 }
+
+                // 🔹 Guardar condiciones de gateway
+                List<Map<String, String>> condiciones = elementos.get("gatewayConditions");
+                if (condiciones != null) {
+                    for (Map<String, String> cond : condiciones) {
+                        TaskModel condition = new TaskModel();
+                        condition.setName("Gateway condition");
+                        condition.setTaskCategory("gateway");
+                        condition.setTaskKey(cond.get("sourceRef"));
+                        condition.setTaskType("exclusiveGateway");
+                        condition.setSourceRef(cond.get("sourceRef"));
+                        condition.setTargetRef(cond.get("targetRef"));
+                        condition.setConditionExpression(cond.get("conditionExpression"));
+                        condition.setVariableName(cond.get("variableName"));
+                        condition.setExpectedValue(cond.get("expectedValue"));
+                        condition.setGatewayType(cond.get("gatewayType"));
+                        tasks.add(condition);
+                        System.out.println("🔸 Condición detectada: "
+                                + cond.get("variableName") + " == " + cond.get("expectedValue")
+                                + " (Gateway: " + cond.get("sourceRef") + ")");
+                    }
+                }
+
+                // 🔹 Guardar gateways con salidas true/false detectadas
+                List<Map<String, String>> gatewaysDetectados = elementos.get("exclusiveGateways");
+                if (gatewaysDetectados != null) {
+                    for (Map<String, String> gw : gatewaysDetectados) {
+                        TaskModel gateway = new TaskModel();
+                        gateway.setTaskCategory("gateway");
+                        gateway.setTaskType("exclusiveGateway");
+                        gateway.setTaskKey(gw.get("gatewayId"));
+                        gateway.setVariableName(gw.get("variableName"));
+                        gateway.setConditionTrue(gw.get("conditionTrue"));
+                        gateway.setConditionFalse(gw.get("conditionFalse"));
+                        tasks.add(gateway);
+                        System.out.println("🧭 Gateway detectado con salidas: TRUE → "
+                                + gw.get("conditionTrue") + ", FALSE → " + gw.get("conditionFalse"));
+                    }
+                }
+
             } else {
-                System.out.println("⚠ No se encontró ningún archivo BPMN en uploads/. No se agregaron compuertas.");
+                System.out.println("⚠ No se encontró ningún archivo BPMN en uploads/. No se agregaron compuertas ni condiciones.");
             }
         } catch (Exception e) {
-            System.err.println("❌ Error al agregar compuertas: " + e.getMessage());
+            System.err.println("❌ Error al agregar compuertas o condiciones: " + e.getMessage());
         }
 
+        // === Guardar todo ===
         repository.saveAll(tasks);
-        System.out.println("💾 Total guardado: " + tasks.size() + " elementos (tareas + compuertas).");
+        System.out.println("💾 Total guardado: " + tasks.size() + " elementos (tareas + compuertas + condiciones).");
     }
 
     // ======================= MÉTODOS AUXILIARES =======================

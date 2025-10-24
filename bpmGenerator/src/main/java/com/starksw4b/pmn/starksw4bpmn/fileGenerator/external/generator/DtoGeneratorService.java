@@ -16,6 +16,7 @@ public class DtoGeneratorService {
         Files.createDirectories(dtoDir);
 
         Path filePath = dtoDir.resolve("FormularioDTO.java");
+
         String classContent = """
                 package com.form.client.dto;
 
@@ -31,11 +32,14 @@ public class DtoGeneratorService {
                     private Boolean activo;
                     private Boolean aprobado = false;
                     private String taskId;
-                    
+
+                    // 🔹 Nuevo campo para enlazar con la instancia de Camunda
+                    private String processInstanceId;
+
                     public String getTaskId() {
                         return taskId;
                     }
-                
+
                     public void setTaskId(String taskId) {
                         this.taskId = taskId;
                     }
@@ -95,11 +99,20 @@ public class DtoGeneratorService {
                     public void setActivo(Boolean activo) {
                         this.activo = activo;
                     }
+
+                    // ✅ Getter y Setter del processInstanceId
+                    public String getProcessInstanceId() {
+                        return processInstanceId;
+                    }
+
+                    public void setProcessInstanceId(String processInstanceId) {
+                        this.processInstanceId = processInstanceId;
+                    }
                 }
                 """;
 
         Files.writeString(filePath, classContent);
-        System.out.println("📦 DTO fijo generado: " + filePath.getFileName());
+        System.out.println("📦 DTO generado correctamente con processInstanceId: " + filePath.getFileName());
     }
 
     private Path getDtoDirectory(Path externalProjectPath) {

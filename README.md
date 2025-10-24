@@ -21,7 +21,7 @@ Generador de software basado en procesos de negocio (BPM). A partir de un modelo
 Asegúrate de tener instalados los siguientes programas:
 
 - [Git](https://git-scm.com/)
-- [Java JDK 17 o superior](https://adoptium.net/)
+- [Java JDK 17](https://adoptium.net/)
 - [Maven](https://maven.apache.org/)
 - [Python 3.9+](https://www.python.org/)
 - [IntelliJ IDEA](https://www.jetbrains.com/idea/) (recommended IDE for Java development)
@@ -87,7 +87,7 @@ mvn spring-boot:run
 
 #### Luego sigue estos pasos:
 
-1. Navega a la carpeta de la interfaz:
+1. Navega a la carpeta de la interfaz (Ten en cuenta cual la ruta en la que clonaste ele repositorio):
 
 ```bash (Busca la ruta donde clonaste el repositorio)
 cd < ruta\completa\hasta >\StarkSw4BPM\UI

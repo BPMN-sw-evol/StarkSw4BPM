@@ -11,7 +11,7 @@ import java.nio.file.Path;
 public class EntityGeneratorService {
 
     public void generateEntities(Path projectPath) throws IOException {
-        // Ruta destino
+        // 📂 Ruta destino
         Path entityPath = projectPath.resolve(
                 "src/main/java/com/form/client/model/Formulario.java"
         );
@@ -21,49 +21,53 @@ public class EntityGeneratorService {
             parentDir.mkdirs();
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("package com.form.client.model;\n\n")
-                .append("import jakarta.persistence.*;\n")
-                .append("\n")
-                .append("@Entity\n")
-                .append("public class Formulario {\n\n")
-                .append("    @Id\n")
-                .append("    @GeneratedValue(strategy = GenerationType.IDENTITY)\n")
-                .append("    private Long id;\n\n")
-                .append("    private String nombre;\n")
-                .append("    private Integer edad;\n")
-                .append("    private String correo;\n")
-                .append("    private boolean activo;\n")
-                .append("    private boolean aprobado;\n")
-                .append("\n")
-                .append("    private String estado;\n")
-                .append("\n")
-                // Getters & Setters
-                .append("    public Long getId() { return id; }\n")
-                .append("    public void setId(Long id) { this.id = id; }\n\n")
+        String content = """
+            package com.form.client.model;
 
-                .append("    public String getNombre() { return nombre; }\n")
-                .append("    public void setNombre(String nombre) { this.nombre = nombre; }\n\n")
+            import jakarta.persistence.*;
 
-                .append("    public Integer getEdad() { return edad; }\n")
-                .append("    public void setEdad(Integer edad) { this.edad = edad; }\n\n")
+            @Entity
+            public class Formulario {
 
-                .append("    public String getCorreo() { return correo; }\n")
-                .append("    public void setCorreo(String correo) { this.correo = correo; }\n\n")
+                @Id
+                @GeneratedValue(strategy = GenerationType.IDENTITY)
+                private Long id;
 
-                .append("    public boolean isActivo() { return activo; }\n")
-                .append("    public void setActivo(boolean activo) { this.activo = activo; }\n\n")
+                private String nombre;
+                private Integer edad;
+                private String correo;
+                private boolean activo;
+                private boolean aprobado;
+                private String estado;
+                private String processInstanceId; // ✅ ID de instancia de proceso Camunda
 
-                .append("    public boolean isAprobado() { return aprobado; }\n")
-                .append("    public void setAprobado(boolean aprobado) { this.aprobado = aprobado; }\n\n")
+                public Long getId() { return id; }
+                public void setId(Long id) { this.id = id; }
 
-                .append("    public String getEstado() { return estado; }\n")
-                .append("    public void setEstado(String estado) { this.estado = estado; }\n\n")
+                public String getNombre() { return nombre; }
+                public void setNombre(String nombre) { this.nombre = nombre; }
 
-                .append("}\n");
+                public Integer getEdad() { return edad; }
+                public void setEdad(Integer edad) { this.edad = edad; }
 
-        Files.writeString(entityPath, sb.toString());
+                public String getCorreo() { return correo; }
+                public void setCorreo(String correo) { this.correo = correo; }
 
-        System.out.println("✅ Entidad generada en: " + entityPath);
+                public boolean isActivo() { return activo; }
+                public void setActivo(boolean activo) { this.activo = activo; }
+
+                public boolean isAprobado() { return aprobado; }
+                public void setAprobado(boolean aprobado) { this.aprobado = aprobado; }
+
+                public String getEstado() { return estado; }
+                public void setEstado(String estado) { this.estado = estado; }
+
+                public String getProcessInstanceId() { return processInstanceId; }
+                public void setProcessInstanceId(String processInstanceId) { this.processInstanceId = processInstanceId; }
+            }
+            """;
+
+        Files.writeString(entityPath, content);
+        System.out.println("✅ Entidad generada con soporte para Camunda (processInstanceId) en: " + entityPath);
     }
 }

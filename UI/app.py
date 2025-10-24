@@ -4,7 +4,7 @@ import io
 
 st.set_page_config(page_title="Upload BPMN", page_icon="⚙️")
 
-st.title("Upload BPMN File")
+st.title("StarkSw4BPM")
 st.write("Upload a `.bpmn` file to send it to the backend.")
 
 uploaded_file = st.file_uploader("Select a BPMN file", type=["bpmn"])

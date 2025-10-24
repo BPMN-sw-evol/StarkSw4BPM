@@ -32,6 +32,7 @@ public class PropertiesFileGeneratorService {
             server.port=9001
             """;
 
+        Files.createDirectories(propertiesFile.getParent());
         Files.writeString(propertiesFile, propertiesContent);
         System.out.println("✅ application.properties generado con configuración fija.");
     }

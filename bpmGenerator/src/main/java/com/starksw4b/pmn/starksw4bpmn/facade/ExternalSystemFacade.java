@@ -4,9 +4,11 @@ import com.starksw4b.pmn.starksw4bpmn.DTOs.TaskResponseDTO;
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.dbProjectsGenerated.FolderCopyService;
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.generator.*;
 import com.starksw4b.pmn.starksw4bpmn.fileGenerator.external.ExternalProjectGeneratorService;
+import com.starksw4b.pmn.starksw4bpmn.service.BpmnParserService;
 import com.starksw4b.pmn.starksw4bpmn.service.TaskService;
 import org.springframework.stereotype.Service;
 
+import java.io.FileNotFoundException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,17 +27,23 @@ public class ExternalSystemFacade {
     private final RestConfigGeneratorService restConfigGeneratorService;
     private final FolderCopyService folderCopyService;
     private final TaskService taskService;
+    private final ConditionFlowGeneratorService conditionFlowGeneratorService;
+    private final BpmnParserService bpmnParserService;
 
-    public ExternalSystemFacade(ExternalProjectGeneratorService externalProjectGeneratorService,
-                                DtoGeneratorService dtoGeneratorService,
-                                EntityGeneratorService entityGeneratorService,
-                                RepositoryGeneratorService repositoryGeneratorService,
-                                ServiceGeneratorService serviceGeneratorService,
-                                ControllerGeneratorService controllerGeneratorService,
-                                ViewGeneratorService viewGeneratorService,
-                                RestConfigGeneratorService restConfigGeneratorService,
-                                FolderCopyService folderCopyService,
-                                TaskService taskService) {
+    public ExternalSystemFacade(
+            ExternalProjectGeneratorService externalProjectGeneratorService,
+            DtoGeneratorService dtoGeneratorService,
+            EntityGeneratorService entityGeneratorService,
+            RepositoryGeneratorService repositoryGeneratorService,
+            ServiceGeneratorService serviceGeneratorService,
+            ControllerGeneratorService controllerGeneratorService,
+            ViewGeneratorService viewGeneratorService,
+            RestConfigGeneratorService restConfigGeneratorService,
+            FolderCopyService folderCopyService,
+            TaskService taskService,
+            ConditionFlowGeneratorService conditionFlowGeneratorService,
+            BpmnParserService bpmnParserService
+    ) {
         this.externalProjectGeneratorService = externalProjectGeneratorService;
         this.dtoGeneratorService = dtoGeneratorService;
         this.entityGeneratorService = entityGeneratorService;
@@ -46,17 +54,33 @@ public class ExternalSystemFacade {
         this.restConfigGeneratorService = restConfigGeneratorService;
         this.folderCopyService = folderCopyService;
         this.taskService = taskService;
+        this.conditionFlowGeneratorService = conditionFlowGeneratorService;
+        this.bpmnParserService = bpmnParserService;
     }
 
     public void generarSistemaExterno(Path proyectoBase, String bpmnFileName) throws Exception {
         // 1️⃣ Crear el proyecto externo (cliente/)
         Path externalPath = externalProjectGeneratorService.generateExternalFormProject(proyectoBase.getParent());
 
-        // 2️⃣ Obtener tareas (solo userTasks) desde la capa de servicio en formato DTO
+        // 2️⃣ Buscar el BPMN en la carpeta "uploads/"
+        Path bpmnDir = Path.of("uploads").toAbsolutePath().normalize();
+        Path bpmnPath = bpmnDir.resolve(bpmnFileName);
+
+        System.out.println("📂 Buscando BPMN en: " + bpmnPath);
+
+        if (!Files.exists(bpmnPath)) {
+            throw new FileNotFoundException("❌ No se encontró el archivo BPMN en: " + bpmnPath);
+        }
+
+        // 3️⃣ Extraer el processDefinitionKey desde el BPMN
+        String processDefinitionKey = bpmnParserService.extractProcessId(bpmnPath.toString());
+        System.out.println("✅ processDefinitionKey extraído del BPMN: " + processDefinitionKey);
+
+        // 4️⃣ Obtener tareas (solo userTasks) desde la DB
         List<TaskResponseDTO> userTasksFromDb = taskService.getUserTaskDTOs();
         System.out.println("📝 userTasks detectadas en DB: " + userTasksFromDb.size());
 
-        // 3️⃣ Obtener compuertas (Exclusive/Parallel) desde la DB
+        // 5️⃣ Obtener compuertas desde la DB
         List<TaskResponseDTO> gatewaysFromDb = taskService.getTasksByCategory("gateway");
         System.out.println("🌀 Compuertas detectadas en DB: " + gatewaysFromDb.size());
 
@@ -65,7 +89,7 @@ public class ExternalSystemFacade {
             return;
         }
 
-        // 🔹 Convertir userTasks a formato compatible con generadores
+        // 6️⃣ Convertir userTasks a formato compatible con los generadores
         List<Map<String, String>> userTasks = new ArrayList<>();
         for (TaskResponseDTO task : userTasksFromDb) {
             Map<String, String> taskInfo = new HashMap<>();
@@ -74,41 +98,31 @@ public class ExternalSystemFacade {
             userTasks.add(taskInfo);
         }
 
-        // 4️⃣ Generar capas base del proyecto
+        // 7️⃣ Generar capas base del proyecto
         dtoGeneratorService.generateDtos(externalPath);
         entityGeneratorService.generateEntities(externalPath);
         repositoryGeneratorService.generateRepositories(externalPath);
-        serviceGeneratorService.generateServices(externalPath);
+        serviceGeneratorService.generateServices(externalPath, processDefinitionKey); // ✅ usa la clave real del BPMN
 
-        // 5️⃣ Generar controladores y vistas de formularios
+        // 8️⃣ Generar controladores y vistas
         if (!userTasks.isEmpty()) {
             controllerGeneratorService.generateControllers(externalPath, userTasks);
             viewGeneratorService.generateViews(externalPath, userTasks);
+            conditionFlowGeneratorService.generateConditionalControllers(externalPath);
         }
 
-        // 6️⃣ Configuración REST global
+        // 9️⃣ Configuración REST global
         restConfigGeneratorService.generateRestConfig(externalPath);
 
-        // 7️⃣ Procesar compuertas BPMN (preparado para futuras expansiones)
+        // 🔟 Procesar compuertas BPMN (futuras expansiones)
         if (!gatewaysFromDb.isEmpty()) {
             for (TaskResponseDTO gateway : gatewaysFromDb) {
-                String type = gateway.getTaskType();
-                String name = gateway.getName();
-                String key = gateway.getTaskKey();
-
-                if ("exclusiveGateway".equalsIgnoreCase(type)) {
-                    System.out.println("⚙️ Detectada ExclusiveGateway → estructura condicional: " + name + " (" + key + ")");
-                    // 🔜 Futuro: GatewayDecisionGeneratorService.generate(...)
-                }
-
-                if ("parallelGateway".equalsIgnoreCase(type)) {
-                    System.out.println("⚙️ Detectada ParallelGateway → estructura paralela: " + name + " (" + key + ")");
-                    // 🔜 Futuro: ParallelGatewayGeneratorService.generate(...)
-                }
+                System.out.printf("⚙️ Detectada %s → %s (%s)%n",
+                        gateway.getTaskType(), gateway.getName(), gateway.getTaskKey());
             }
         }
 
-        // 8️⃣ Copiar subcarpetas de dbs/
+        // 1️⃣1️⃣ Copiar subcarpetas de dbs/
         Path sourceDbsDir = Path.of("dbs");
         Path destinationBase = proyectoBase.getParent();
 
