@@ -79,6 +79,7 @@ mvn spring-boot:run
 
 ### 3️⃣ Ejecutar la Interfaz de Usuario (Streamlit)
 
+
 ⚠️ Este paso debe hacerse en una **terminal con permisos de administrador**. Para abrirla:
 
 1. Pulsa `Inicio`
